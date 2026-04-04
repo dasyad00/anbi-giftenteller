@@ -26,7 +26,12 @@ i18next
           dutch: "Dutch",
           english: "English",
           anbi_explanation: "ANBI stands for 'Algemeen Nut Beogende Instelling' (Public Benefit Organization). Donations to these are often tax-deductible in the Netherlands.",
-          disclaimer: "Note: This tool uses AI to identify potential donations. Always verify the results with your official records."
+          disclaimer: "Note: This tool uses AI to identify potential donations. Always verify the results with your official records.",
+          mode_ai: "AI Analysis",
+          mode_manual: "Manual Grouping",
+          group_by_desc: "Grouped by counterparty",
+          view_transactions: "View Transactions",
+          hide_transactions: "Hide Transactions"
         }
       },
       nl: {
@@ -50,7 +55,12 @@ i18next
           dutch: "Nederlands",
           english: "Engels",
           anbi_explanation: "ANBI staat voor 'Algemeen Nut Beogende Instelling'. Giften aan deze instellingen zijn vaak aftrekbaar van de belasting.",
-          disclaimer: "Let op: Deze tool gebruikt AI om mogelijke giften te identificeren. Controleer de resultaten altijd met je officiële administratie."
+          disclaimer: "Let op: Deze tool gebruikt AI om mogelijke giften te identificeren. Controleer de resultaten altijd met je officiële administratie.",
+          mode_ai: "AI Analyse",
+          mode_manual: "Handmatig Groeperen",
+          group_by_desc: "Gegroepeerd op tegenrekening",
+          view_transactions: "Bekijk Transacties",
+          hide_transactions: "Verberg Transacties"
         }
       }
     },

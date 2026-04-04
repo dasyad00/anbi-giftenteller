@@ -14,18 +14,28 @@ import {
   Smartphone,
   Info,
   ChevronRight,
-  Loader2
+  Loader2,
+  Users,
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions, type Transaction, type DonationResult } from './services/gemini';
+import { groupTransactionsByCounterparty, type GroupedDonation } from './lib/analysis';
+
+type AnalysisMode = 'ai' | 'manual';
 
 export default function App() {
   const { t, i18n } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [results, setResults] = useState<DonationResult[]>([]);
+  const [groupedResults, setGroupedResults] = useState<GroupedDonation[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear().toString());
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<AnalysisMode>('ai');
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -36,18 +46,12 @@ export default function App() {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        // Basic mapping - different banks have different headers
-        // This is a simplified version; real apps would need more robust mapping
         const mapped: Transaction[] = results.data.map((row: any) => {
-          // Common headers for Dutch banks (ING, ABN, Rabo)
           const date = row.Datum || row.Date || row['Boekdatum'] || '';
           const amountStr = row.Bedrag || row.Amount || row['Bedrag (EUR)'] || '0';
           const description = row.Naam || row.Omschrijving || row.Description || row['Mededelingen'] || '';
           const counterparty = row['Tegenrekening'] || row['Counterparty'] || '';
-
-          // Clean amount string (replace comma with dot if needed)
           const amount = parseFloat(amountStr.toString().replace(',', '.'));
-
           return { date, description, amount, counterparty };
         }).filter(t => t.date && t.amount);
 
@@ -55,6 +59,8 @@ export default function App() {
           setError("Could not find valid transactions in the CSV. Please check the format.");
         } else {
           setTransactions(mapped);
+          setResults([]);
+          setGroupedResults([]);
         }
       },
       error: () => {
@@ -74,8 +80,15 @@ export default function App() {
     setIsAnalyzing(true);
     setError(null);
     try {
-      const donationResults = await analyzeTransactions(transactions, fiscalYear);
-      setResults(donationResults);
+      if (mode === 'ai') {
+        const donationResults = await analyzeTransactions(transactions, fiscalYear);
+        setResults(donationResults);
+        setGroupedResults([]);
+      } else {
+        const grouped = groupTransactionsByCounterparty(transactions, fiscalYear);
+        setGroupedResults(grouped);
+        setResults([]);
+      }
     } catch (err) {
       setError("Analysis failed. Please try again.");
       console.error(err);
@@ -84,7 +97,13 @@ export default function App() {
     }
   };
 
-  const totalDonations = results.reduce((sum, r) => sum + r.amount, 0);
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const totalDonations = mode === 'ai' 
+    ? results.reduce((sum, r) => sum + r.amount, 0)
+    : groupedResults.reduce((sum, r) => sum + r.totalAmount, 0);
 
   const toggleLanguage = () => {
     const nextLng = i18n.language === 'nl' ? 'en' : 'nl';
@@ -121,9 +140,35 @@ export default function App() {
           {/* Left Column: Controls & Upload */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold mb-1">{t('upload_title')}</h2>
-                <p className="text-sm text-slate-500">{t('subtitle')}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold mb-1">{t('upload_title')}</h2>
+                  <p className="text-sm text-slate-500">{t('subtitle')}</p>
+                </div>
+              </div>
+
+              {/* Mode Selector */}
+              <div className="flex p-1 bg-slate-100 rounded-xl">
+                <button
+                  onClick={() => setMode('ai')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
+                    mode === 'ai' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {t('mode_ai')}
+                </button>
+                <button
+                  onClick={() => setMode('manual')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
+                    mode === 'manual' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  <Users className="w-4 h-4" />
+                  {t('mode_manual')}
+                </button>
               </div>
 
               {/* Year Selector */}
@@ -233,7 +278,7 @@ export default function App() {
           {/* Right Column: Results */}
           <div className="lg:col-span-7">
             <AnimatePresence mode="wait">
-              {results.length > 0 ? (
+              {(results.length > 0 || groupedResults.length > 0) ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -250,33 +295,84 @@ export default function App() {
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-6">
                         <h3 className="font-bold text-lg">{t('results')}</h3>
-                        <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5">
-                          <Download className="w-4 h-4" />
-                          Export PDF
-                        </button>
+                        <div className="flex gap-2">
+                          <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5">
+                            <Download className="w-4 h-4" />
+                            Export PDF
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="space-y-4">
-                        {results.map((result, idx) => (
-                          <div key={idx} className="flex items-start justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
-                            <div className="space-y-1">
-                              <p className="font-bold text-slate-800">{result.organization}</p>
-                              <p className="text-xs text-slate-500">{result.date} • {result.description}</p>
+                      {/* AI Results */}
+                      {mode === 'ai' && (
+                        <div className="space-y-4">
+                          {results.map((result, idx) => (
+                            <div key={idx} className="flex items-start justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                              <div className="space-y-1">
+                                <p className="font-bold text-slate-800">{result.organization}</p>
+                                <p className="text-xs text-slate-500">{result.date} • {result.description}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-indigo-600">€{result.amount.toFixed(2)}</p>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700">
+                                  ANBI
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-bold text-indigo-600">€{result.amount.toFixed(2)}</p>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                                ANBI
-                              </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Manual Grouped Results */}
+                      {mode === 'manual' && (
+                        <div className="space-y-4">
+                          {groupedResults.map((group, idx) => (
+                            <div key={idx} className="border border-slate-100 rounded-xl overflow-hidden">
+                              <div 
+                                onClick={() => toggleGroup(group.counterparty)}
+                                className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                              >
+                                <div className="space-y-1">
+                                  <p className="font-bold text-slate-800">{group.counterparty}</p>
+                                  <p className="text-xs text-slate-500">{group.transactions.length} transactions</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <p className="font-bold text-indigo-600">€{group.totalAmount.toFixed(2)}</p>
+                                  {expandedGroups[group.counterparty] ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                </div>
+                              </div>
+                              
+                              <AnimatePresence>
+                                {expandedGroups[group.counterparty] && (
+                                  <motion.div
+                                    initial={{ height: 0 }}
+                                    animate={{ height: 'auto' }}
+                                    exit={{ height: 0 }}
+                                    className="overflow-hidden bg-slate-50/50 border-t border-slate-100"
+                                  >
+                                    <div className="p-4 space-y-3">
+                                      {group.transactions.map((t, tIdx) => (
+                                        <div key={tIdx} className="flex justify-between text-xs">
+                                          <div className="text-slate-600">
+                                            <span className="font-medium mr-2">{t.date}</span>
+                                            <span className="italic">{t.description}</span>
+                                          </div>
+                                          <span className="font-medium text-slate-700">€{t.amount.toFixed(2)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="bg-slate-50 p-4 border-t border-slate-100">
                       <p className="text-[11px] text-slate-400 text-center italic">
-                        {t('disclaimer')}
+                        {mode === 'ai' ? t('disclaimer') : t('group_by_desc')}
                       </p>
                     </div>
                   </div>
@@ -293,7 +389,7 @@ export default function App() {
                   <div>
                     <h3 className="font-bold text-lg">{t('analyze')}</h3>
                     <p className="text-slate-500 max-w-xs mx-auto">
-                      Click the analyze button to identify ANBI donations in your statement.
+                      Click the analyze button to process your statement using {mode === 'ai' ? 'AI' : 'manual grouping'}.
                     </p>
                   </div>
                 </motion.div>
