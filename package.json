@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "clean": "rm -rf dist",
+    "format": "prettier --write .",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
+    "prettier": "^3.8.1",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
