@@ -2,6 +2,8 @@
 
 A specialized web application to help users calculate their total donations to ANBI (Public Benefit Organizations) in the Netherlands for tax deduction purposes.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/eeb46d19-5f9b-4211-9d02-a9313399ca89/deploy-status)](https://app.netlify.com/projects/anbi-giftenteller/deploys)
+
 ## Features
 
 <!---
