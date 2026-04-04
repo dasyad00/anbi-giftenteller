@@ -16,6 +16,7 @@ AI is Disabled: only client-side analysis
 - **Fiscal Year Filtering**: Easily calculate totals for specific tax years.
 - **Responsive Design**: Polished UI built with Tailwind CSS and Motion.
 - **Unit Tested**: Core analysis logic is verified with Vitest.
+- **ANBI Database**: The app uses the official ANBI database from overheid.nl, which is cached on the client-side for performance and offline access. A refresh mechanism is provided to update the database.
 
 ## Technical Stack
 
@@ -23,7 +24,7 @@ AI is Disabled: only client-side analysis
 - **AI**: Google Gemini API (@google/genai)
 - **Styling**: Tailwind CSS 4, Lucide React (icons)
 - **Animation**: Motion (formerly Framer Motion)
-- **Parsing**: PapaParse (CSV)
+- **Parsing**: PapaParse (CSV), JSZip, fast-xml-parser
 - **Internationalization**: react-i18next
 - **Testing**: Vitest
 

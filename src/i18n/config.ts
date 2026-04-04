@@ -33,6 +33,8 @@ i18next.use(initReactI18next).init({
         group_by_desc: 'Grouped by counterparty',
         view_transactions: 'View Transactions',
         hide_transactions: 'Hide Transactions',
+        anbi_source:
+          'The ANBI database is sourced from overheid.nl and is cached for offline use.',
       },
     },
     nl: {
@@ -65,6 +67,8 @@ i18next.use(initReactI18next).init({
         group_by_desc: 'Gegroepeerd op tegenrekening',
         view_transactions: 'Bekijk Transacties',
         hide_transactions: 'Verberg Transacties',
+        anbi_source:
+          'De ANBI-database is afkomstig van overheid.nl en wordt in de cache opgeslagen voor offline gebruik.',
       },
     },
   },

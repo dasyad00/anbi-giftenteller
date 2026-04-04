@@ -340,9 +340,7 @@ export default function App() {
                   <p className="text-sm font-medium text-slate-800">
                     ANBI Database
                   </p>
-                  <p className="text-xs text-slate-500">
-                    Cache the ANBI database for offline use.
-                  </p>
+                  <p className="text-xs text-slate-500">{t('anbi_source')}</p>
                 </div>
               </div>
               <button
