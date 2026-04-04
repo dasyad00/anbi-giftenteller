@@ -1,10 +1,14 @@
+export interface Party {
+  name: string;
+  iban: string;
+}
+
 export interface Transaction {
   date: string;
   description: string;
   amount: number;
-  counterparty?: string;
+  counterparty: Party;
 }
-
 
 export interface DonationResult {
   organization: string;

@@ -1,7 +1,7 @@
-import { Transaction } from "./types";
+import { Party, Transaction } from "./types";
 
 export interface GroupedDonation {
-  counterparty: string;
+  counterparty: Party;
   totalAmount: number;
   transactions: Transaction[];
 }
@@ -12,7 +12,7 @@ export interface GroupedDonation {
  */
 export function groupTransactionsByCounterparty(
   transactions: Transaction[],
-  year: string
+  year: string,
 ): GroupedDonation[] {
   const filtered = transactions.filter((t) => {
     // Basic year check (assuming YYYY-MM-DD or similar format)
@@ -22,10 +22,11 @@ export function groupTransactionsByCounterparty(
   const groups: Record<string, GroupedDonation> = {};
 
   filtered.forEach((t) => {
-    const key = t.counterparty || t.description || "Unknown";
+    const counterparty = t.counterparty;
+    const key = counterparty.iban;
     if (!groups[key]) {
       groups[key] = {
-        counterparty: key,
+        counterparty: counterparty,
         totalAmount: 0,
         transactions: [],
       };

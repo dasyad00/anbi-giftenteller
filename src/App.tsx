@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions } from './services/gemini';
-import { type DonationResult, type Transaction } from "./lib/types";
+import { Party, type DonationResult, type Transaction } from './lib/types';
 import { groupTransactionsByCounterparty, type GroupedDonation } from './lib/analysis';
 
 type AnalysisMode = 'ai' | 'manual';
@@ -50,8 +50,11 @@ export default function App() {
         const mapped: Transaction[] = results.data.map((row: any) => {
           const date = row.Datum || row.Date || row['Boekdatum'] || '';
           const amountStr = row.Bedrag || row.Amount || row['Bedrag (EUR)'] || '0';
-          const description = row.Naam || row.Omschrijving || row.Description || row['Mededelingen'] || '';
-          const counterparty = row['Tegenrekening'] || row['Counterparty'] || '';
+          const description = row.Naam || row.Omschrijving || row.Description || row['Description-1'] || row['Mededelingen'] || '';
+          const counterparty: Party = {
+            name: row['Name Counterpty'] || '',
+            iban: row['Tegenrekening'] || row['Counterparty'] || row['Counterpty IBAN/BBAN'] || '',
+          };
           const amount = parseFloat(amountStr.toString().replace(',', '.'));
           return { date, description, amount, counterparty };
         }).filter(t => t.date && t.amount);
@@ -330,21 +333,22 @@ export default function App() {
                           {groupedResults.map((group, idx) => (
                             <div key={idx} className="border border-slate-100 rounded-xl overflow-hidden">
                               <div
-                                onClick={() => toggleGroup(group.counterparty)}
+                                onClick={() => toggleGroup(group.counterparty.iban)}
                                 className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
                               >
                                 <div className="space-y-1">
-                                  <p className="font-bold text-slate-800">{group.counterparty}</p>
+                                  <p className="font-bold text-slate-800">{group.counterparty.name}</p>
+                                  <p className="text-sm text-slate-800">{group.counterparty.iban}</p>
                                   <p className="text-xs text-slate-500">{group.transactions.length} transactions</p>
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <p className="font-bold text-indigo-600">€{group.totalAmount.toFixed(2)}</p>
-                                  {expandedGroups[group.counterparty] ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                  {expandedGroups[group.counterparty.iban] ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                                 </div>
                               </div>
 
                               <AnimatePresence>
-                                {expandedGroups[group.counterparty] && (
+                                {expandedGroups[group.counterparty.iban] && (
                                   <motion.div
                                     initial={{ height: 0 }}
                                     animate={{ height: 'auto' }}
