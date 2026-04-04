@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Upload, 
-  FileText, 
-  CheckCircle2, 
-  AlertCircle, 
-  Globe, 
-  TrendingUp, 
+import {
+  Upload,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Globe,
+  TrendingUp,
   Download,
   Smartphone,
   Info,
@@ -21,7 +21,8 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { analyzeTransactions, type Transaction, type DonationResult } from './services/gemini';
+import { analyzeTransactions } from './services/gemini';
+import { type DonationResult, type Transaction } from "./lib/types";
 import { groupTransactionsByCounterparty, type GroupedDonation } from './lib/analysis';
 
 type AnalysisMode = 'ai' | 'manual';
@@ -101,7 +102,7 @@ export default function App() {
     setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const totalDonations = mode === 'ai' 
+  const totalDonations = mode === 'ai'
     ? results.reduce((sum, r) => sum + r.amount, 0)
     : groupedResults.reduce((sum, r) => sum + r.totalAmount, 0);
 
@@ -121,9 +122,9 @@ export default function App() {
             </div>
             <h1 className="font-bold text-xl tracking-tight text-slate-800">{t('title')}</h1>
           </div>
-          
+
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={toggleLanguage}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors text-sm font-medium text-slate-600"
             >
@@ -136,7 +137,7 @@ export default function App() {
 
       <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Left Column: Controls & Upload */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
@@ -174,7 +175,7 @@ export default function App() {
               {/* Year Selector */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">{t('fiscal_year')}</label>
-                <select 
+                <select
                   value={fiscalYear}
                   onChange={(e) => setFiscalYear(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
@@ -186,8 +187,8 @@ export default function App() {
               </div>
 
               {/* Dropzone */}
-              <div 
-                {...getRootProps()} 
+              <div
+                {...getRootProps()}
                 className={cn(
                   "border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200",
                   isDragActive ? "border-indigo-500 bg-indigo-50" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
@@ -207,8 +208,8 @@ export default function App() {
                   )}
                   <div>
                     <p className="font-medium text-slate-800">
-                      {transactions.length > 0 
-                        ? `${transactions.length} transactions loaded` 
+                      {transactions.length > 0
+                        ? `${transactions.length} transactions loaded`
                         : t('upload_desc')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">CSV format from ING, ABN, Rabo, etc.</p>
@@ -228,8 +229,8 @@ export default function App() {
                 disabled={transactions.length === 0 || isAnalyzing}
                 className={cn(
                   "w-full py-3.5 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200",
-                  transactions.length === 0 || isAnalyzing 
-                    ? "bg-slate-300 cursor-not-allowed shadow-none" 
+                  transactions.length === 0 || isAnalyzing
+                    ? "bg-slate-300 cursor-not-allowed shadow-none"
                     : "bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]"
                 )}
               >
@@ -291,7 +292,7 @@ export default function App() {
                       <p className="text-indigo-100 text-sm font-medium uppercase tracking-wider mb-1">{t('total')}</p>
                       <h2 className="text-4xl font-bold">€{totalDonations.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
                     </div>
-                    
+
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-6">
                         <h3 className="font-bold text-lg">{t('results')}</h3>
@@ -328,7 +329,7 @@ export default function App() {
                         <div className="space-y-4">
                           {groupedResults.map((group, idx) => (
                             <div key={idx} className="border border-slate-100 rounded-xl overflow-hidden">
-                              <div 
+                              <div
                                 onClick={() => toggleGroup(group.counterparty)}
                                 className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
                               >
@@ -341,7 +342,7 @@ export default function App() {
                                   {expandedGroups[group.counterparty] ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                                 </div>
                               </div>
-                              
+
                               <AnimatePresence>
                                 {expandedGroups[group.counterparty] && (
                                   <motion.div
@@ -369,7 +370,7 @@ export default function App() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="bg-slate-50 p-4 border-t border-slate-100">
                       <p className="text-[11px] text-slate-400 text-center italic">
                         {mode === 'ai' ? t('disclaimer') : t('group_by_desc')}
@@ -411,7 +412,7 @@ export default function App() {
 
         </div>
       </main>
-      
+
       <footer className="max-w-5xl mx-auto px-4 py-8 border-t border-slate-200 mt-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
           <p>© 2026 ANBI Donation Tracker. Built with Google AI Studio.</p>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { groupTransactionsByCounterparty } from './analysis';
-import { Transaction } from '../services/gemini';
+import { Transaction } from "./types";
 
 describe('groupTransactionsByCounterparty', () => {
   const mockTransactions: Transaction[] = [
@@ -13,9 +13,9 @@ describe('groupTransactionsByCounterparty', () => {
 
   it('should group transactions by counterparty for a specific year', () => {
     const result = groupTransactionsByCounterparty(mockTransactions, '2025');
-    
+
     expect(result).toHaveLength(3);
-    
+
     const charityA = result.find(g => g.counterparty === 'Charity A');
     expect(charityA?.totalAmount).toBe(30);
     expect(charityA?.transactions).toHaveLength(2);

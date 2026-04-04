@@ -1,44 +1,29 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { DonationResult, Transaction } from "../lib/types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
-export interface Transaction {
-  date: string;
-  description: string;
-  amount: number;
-  counterparty?: string;
-}
-
-export interface DonationResult {
-  organization: string;
-  amount: number;
-  date: string;
-  description: string;
-  isAnbi: boolean;
-  confidence: number;
-}
 
 export async function analyzeTransactions(transactions: Transaction[], year: string): Promise<DonationResult[]> {
   if (transactions.length === 0) return [];
 
   // Filter transactions for the selected year first to save tokens
   const filtered = transactions.filter(t => t.date.includes(year));
-  
+
   if (filtered.length === 0) return [];
 
   // Chunk transactions if there are too many (Gemini can handle a lot, but let's be safe)
-  const transactionList = filtered.map(t => 
+  const transactionList = filtered.map(t =>
     `Date: ${t.date}, Amount: ${t.amount}, Desc: ${t.description}, To: ${t.counterparty || 'Unknown'}`
   ).join('\n');
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: `Identify all donations to ANBI (Public Benefit Organizations) in the following list of transactions for the year ${year}. 
+    contents: `Identify all donations to ANBI (Public Benefit Organizations) in the following list of transactions for the year ${year}.
     ANBIs are typically charities, religious institutions, or cultural organizations.
-    
+
     Transactions:
     ${transactionList}
-    
+
     Return only the donations found.`,
     config: {
       responseMimeType: "application/json",

@@ -1,4 +1,4 @@
-import { Transaction } from "../services/gemini";
+import { Transaction } from "./types";
 
 export interface GroupedDonation {
   counterparty: string;
