@@ -1,0 +1,5 @@
+{
+  "name": "ANBI Donation Tracker",
+  "description": "Calculate your total ANBI donations from bank statements for tax purposes. Supports English and Dutch.",
+  "requestFramePermissions": []
+}
