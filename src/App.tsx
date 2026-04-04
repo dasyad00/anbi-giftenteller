@@ -18,12 +18,15 @@ import {
   Users,
   Sparkles,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions } from './services/gemini';
 import { Party, type DonationResult, type Transaction } from './lib/types';
-import { groupTransactionsByCounterparty, type GroupedDonation } from './lib/analysis';
+import {
+  groupTransactionsByCounterparty,
+  type GroupedDonation,
+} from './lib/analysis';
 
 type AnalysisMode = 'ai' | 'manual';
 
@@ -33,10 +36,14 @@ export default function App() {
   const [results, setResults] = useState<DonationResult[]>([]);
   const [groupedResults, setGroupedResults] = useState<GroupedDonation[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear().toString());
+  const [fiscalYear, setFiscalYear] = useState(
+    new Date().getFullYear().toString(),
+  );
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<AnalysisMode>('ai');
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -47,20 +54,35 @@ export default function App() {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const mapped: Transaction[] = results.data.map((row: any) => {
-          const date = row.Datum || row.Date || row['Boekdatum'] || '';
-          const amountStr = row.Bedrag || row.Amount || row['Bedrag (EUR)'] || '0';
-          const description = row.Naam || row.Omschrijving || row.Description || row['Description-1'] || row['Mededelingen'] || '';
-          const counterparty: Party = {
-            name: row['Name Counterpty'] || '',
-            iban: row['Tegenrekening'] || row['Counterparty'] || row['Counterpty IBAN/BBAN'] || '',
-          };
-          const amount = parseFloat(amountStr.toString().replace(',', '.'));
-          return { date, description, amount, counterparty };
-        }).filter(t => t.date && t.amount);
+        const mapped: Transaction[] = results.data
+          .map((row: any) => {
+            const date = row.Datum || row.Date || row['Boekdatum'] || '';
+            const amountStr =
+              row.Bedrag || row.Amount || row['Bedrag (EUR)'] || '0';
+            const description =
+              row.Naam ||
+              row.Omschrijving ||
+              row.Description ||
+              row['Description-1'] ||
+              row['Mededelingen'] ||
+              '';
+            const counterparty: Party = {
+              name: row['Name Counterpty'] || '',
+              iban:
+                row['Tegenrekening'] ||
+                row['Counterparty'] ||
+                row['Counterpty IBAN/BBAN'] ||
+                '',
+            };
+            const amount = parseFloat(amountStr.toString().replace(',', '.'));
+            return { date, description, amount, counterparty };
+          })
+          .filter((t) => t.date && t.amount);
 
         if (mapped.length === 0) {
-          setError("Could not find valid transactions in the CSV. Please check the format.");
+          setError(
+            'Could not find valid transactions in the CSV. Please check the format.',
+          );
         } else {
           setTransactions(mapped);
           setResults([]);
@@ -68,8 +90,8 @@ export default function App() {
         }
       },
       error: () => {
-        setError("Error parsing CSV file.");
-      }
+        setError('Error parsing CSV file.');
+      },
     });
   }, []);
 
@@ -85,16 +107,22 @@ export default function App() {
     setError(null);
     try {
       if (mode === 'ai') {
-        const donationResults = await analyzeTransactions(transactions, fiscalYear);
+        const donationResults = await analyzeTransactions(
+          transactions,
+          fiscalYear,
+        );
         setResults(donationResults);
         setGroupedResults([]);
       } else {
-        const grouped = groupTransactionsByCounterparty(transactions, fiscalYear);
+        const grouped = groupTransactionsByCounterparty(
+          transactions,
+          fiscalYear,
+        );
         setGroupedResults(grouped);
         setResults([]);
       }
     } catch (err) {
-      setError("Analysis failed. Please try again.");
+      setError('Analysis failed. Please try again.');
       console.error(err);
     } finally {
       setIsAnalyzing(false);
@@ -102,12 +130,13 @@ export default function App() {
   };
 
   const toggleGroup = (key: string) => {
-    setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const totalDonations = mode === 'ai'
-    ? results.reduce((sum, r) => sum + r.amount, 0)
-    : groupedResults.reduce((sum, r) => sum + r.totalAmount, 0);
+  const totalDonations =
+    mode === 'ai'
+      ? results.reduce((sum, r) => sum + r.amount, 0)
+      : groupedResults.reduce((sum, r) => sum + r.totalAmount, 0);
 
   const toggleLanguage = () => {
     const nextLng = i18n.language === 'nl' ? 'en' : 'nl';
@@ -123,7 +152,9 @@ export default function App() {
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <TrendingUp className="text-white w-5 h-5" />
             </div>
-            <h1 className="font-bold text-xl tracking-tight text-slate-800">{t('title')}</h1>
+            <h1 className="font-bold text-xl tracking-tight text-slate-800">
+              {t('title')}
+            </h1>
           </div>
 
           <div className="flex items-center gap-4">
@@ -140,13 +171,14 @@ export default function App() {
 
       <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
           {/* Left Column: Controls & Upload */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold mb-1">{t('upload_title')}</h2>
+                  <h2 className="text-lg font-semibold mb-1">
+                    {t('upload_title')}
+                  </h2>
                   <p className="text-sm text-slate-500">{t('subtitle')}</p>
                 </div>
               </div>
@@ -156,8 +188,10 @@ export default function App() {
                 <button
                   onClick={() => setMode('ai')}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
-                    mode === 'ai' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    'flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all',
+                    mode === 'ai'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700',
                   )}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -166,8 +200,10 @@ export default function App() {
                 <button
                   onClick={() => setMode('manual')}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
-                    mode === 'manual' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    'flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all',
+                    mode === 'manual'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700',
                   )}
                 >
                   <Users className="w-4 h-4" />
@@ -177,14 +213,18 @@ export default function App() {
 
               {/* Year Selector */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">{t('fiscal_year')}</label>
+                <label className="text-sm font-medium text-slate-700">
+                  {t('fiscal_year')}
+                </label>
                 <select
                   value={fiscalYear}
                   onChange={(e) => setFiscalYear(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 >
-                  {[2026, 2025, 2024, 2023].map(year => (
-                    <option key={year} value={year.toString()}>{year}</option>
+                  {[2026, 2025, 2024, 2023].map((year) => (
+                    <option key={year} value={year.toString()}>
+                      {year}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -193,9 +233,13 @@ export default function App() {
               <div
                 {...getRootProps()}
                 className={cn(
-                  "border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200",
-                  isDragActive ? "border-indigo-500 bg-indigo-50" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                  transactions.length > 0 ? "border-emerald-200 bg-emerald-50/30" : ""
+                  'border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200',
+                  isDragActive
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+                  transactions.length > 0
+                    ? 'border-emerald-200 bg-emerald-50/30'
+                    : '',
                 )}
               >
                 <input {...getInputProps()} />
@@ -215,7 +259,9 @@ export default function App() {
                         ? `${transactions.length} transactions loaded`
                         : t('upload_desc')}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">CSV format from ING, ABN, Rabo, etc.</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      CSV format from ING, ABN, Rabo, etc.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -231,10 +277,10 @@ export default function App() {
                 onClick={handleAnalyze}
                 disabled={transactions.length === 0 || isAnalyzing}
                 className={cn(
-                  "w-full py-3.5 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200",
+                  'w-full py-3.5 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-200',
                   transactions.length === 0 || isAnalyzing
-                    ? "bg-slate-300 cursor-not-allowed shadow-none"
-                    : "bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]"
+                    ? 'bg-slate-300 cursor-not-allowed shadow-none'
+                    : 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]',
                 )}
               >
                 {isAnalyzing ? (
@@ -256,7 +302,9 @@ export default function App() {
               <div className="flex gap-3">
                 <Info className="w-5 h-5 text-indigo-600 shrink-0" />
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-indigo-900 text-sm">ANBI?</h3>
+                  <h3 className="font-semibold text-indigo-900 text-sm">
+                    ANBI?
+                  </h3>
                   <p className="text-sm text-indigo-800/80 leading-relaxed">
                     {t('anbi_explanation')}
                   </p>
@@ -271,8 +319,12 @@ export default function App() {
                   <Smartphone className="w-5 h-5 text-slate-600 group-hover:text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-800">{t('future_banking')}</p>
-                  <p className="text-xs text-slate-500">Open Banking (PSD2) API</p>
+                  <p className="text-sm font-medium text-slate-800">
+                    {t('future_banking')}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Open Banking (PSD2) API
+                  </p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
@@ -282,7 +334,7 @@ export default function App() {
           {/* Right Column: Results */}
           <div className="lg:col-span-7">
             <AnimatePresence mode="wait">
-              {(results.length > 0 || groupedResults.length > 0) ? (
+              {results.length > 0 || groupedResults.length > 0 ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -292,8 +344,15 @@ export default function App() {
                   {/* Summary Card */}
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="bg-indigo-600 p-8 text-white">
-                      <p className="text-indigo-100 text-sm font-medium uppercase tracking-wider mb-1">{t('total')}</p>
-                      <h2 className="text-4xl font-bold">€{totalDonations.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
+                      <p className="text-indigo-100 text-sm font-medium uppercase tracking-wider mb-1">
+                        {t('total')}
+                      </p>
+                      <h2 className="text-4xl font-bold">
+                        €
+                        {totalDonations.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}
+                      </h2>
                     </div>
 
                     <div className="p-6">
@@ -311,13 +370,22 @@ export default function App() {
                       {mode === 'ai' && (
                         <div className="space-y-4">
                           {results.map((result, idx) => (
-                            <div key={idx} className="flex items-start justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+                            <div
+                              key={idx}
+                              className="flex items-start justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors"
+                            >
                               <div className="space-y-1">
-                                <p className="font-bold text-slate-800">{result.organization}</p>
-                                <p className="text-xs text-slate-500">{result.date} • {result.description}</p>
+                                <p className="font-bold text-slate-800">
+                                  {result.organization}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {result.date} • {result.description}
+                                </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-indigo-600">€{result.amount.toFixed(2)}</p>
+                                <p className="font-bold text-indigo-600">
+                                  €{result.amount.toFixed(2)}
+                                </p>
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700">
                                   ANBI
                                 </span>
@@ -331,19 +399,36 @@ export default function App() {
                       {mode === 'manual' && (
                         <div className="space-y-4">
                           {groupedResults.map((group, idx) => (
-                            <div key={idx} className="border border-slate-100 rounded-xl overflow-hidden">
+                            <div
+                              key={idx}
+                              className="border border-slate-100 rounded-xl overflow-hidden"
+                            >
                               <div
-                                onClick={() => toggleGroup(group.counterparty.iban)}
+                                onClick={() =>
+                                  toggleGroup(group.counterparty.iban)
+                                }
                                 className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
                               >
                                 <div className="space-y-1">
-                                  <p className="font-bold text-slate-800">{group.counterparty.name}</p>
-                                  <p className="text-sm text-slate-800">{group.counterparty.iban}</p>
-                                  <p className="text-xs text-slate-500">{group.transactions.length} transactions</p>
+                                  <p className="font-bold text-slate-800">
+                                    {group.counterparty.name}
+                                  </p>
+                                  <p className="text-sm text-slate-800">
+                                    {group.counterparty.iban}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {group.transactions.length} transactions
+                                  </p>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                  <p className="font-bold text-indigo-600">€{group.totalAmount.toFixed(2)}</p>
-                                  {expandedGroups[group.counterparty.iban] ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                                  <p className="font-bold text-indigo-600">
+                                    €{group.totalAmount.toFixed(2)}
+                                  </p>
+                                  {expandedGroups[group.counterparty.iban] ? (
+                                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                                  )}
                                 </div>
                               </div>
 
@@ -357,12 +442,21 @@ export default function App() {
                                   >
                                     <div className="p-4 space-y-3">
                                       {group.transactions.map((t, tIdx) => (
-                                        <div key={tIdx} className="flex justify-between text-xs">
+                                        <div
+                                          key={tIdx}
+                                          className="flex justify-between text-xs"
+                                        >
                                           <div className="text-slate-600">
-                                            <span className="font-medium mr-2">{t.date}</span>
-                                            <span className="italic">{t.description}</span>
+                                            <span className="font-medium mr-2">
+                                              {t.date}
+                                            </span>
+                                            <span className="italic">
+                                              {t.description}
+                                            </span>
                                           </div>
-                                          <span className="font-medium text-slate-700">€{t.amount.toFixed(2)}</span>
+                                          <span className="font-medium text-slate-700">
+                                            €{t.amount.toFixed(2)}
+                                          </span>
                                         </div>
                                       ))}
                                     </div>
@@ -394,7 +488,8 @@ export default function App() {
                   <div>
                     <h3 className="font-bold text-lg">{t('analyze')}</h3>
                     <p className="text-slate-500 max-w-xs mx-auto">
-                      Click the analyze button to process your statement using {mode === 'ai' ? 'AI' : 'manual grouping'}.
+                      Click the analyze button to process your statement using{' '}
+                      {mode === 'ai' ? 'AI' : 'manual grouping'}.
                     </p>
                   </div>
                 </motion.div>
@@ -406,14 +501,14 @@ export default function App() {
                   <div className="space-y-2">
                     <h3 className="font-bold text-xl">Ready to calculate</h3>
                     <p className="text-slate-500 max-w-xs">
-                      Upload your bank statement to start tracking your donations.
+                      Upload your bank statement to start tracking your
+                      donations.
                     </p>
                   </div>
                 </div>
               )}
             </AnimatePresence>
           </div>
-
         </div>
       </main>
 
@@ -421,9 +516,15 @@ export default function App() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
           <p>© 2026 ANBI Donation Tracker. Built with Google AI Studio.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-slate-600">Privacy</a>
-            <a href="#" className="hover:text-slate-600">Terms</a>
-            <a href="#" className="hover:text-slate-600">Security</a>
+            <a href="#" className="hover:text-slate-600">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-slate-600">
+              Terms
+            </a>
+            <a href="#" className="hover:text-slate-600">
+              Security
+            </a>
           </div>
         </div>
       </footer>

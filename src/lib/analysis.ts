@@ -1,4 +1,4 @@
-import { Party, Transaction } from "./types";
+import { Party, Transaction } from './types';
 
 export interface GroupedDonation {
   counterparty: Party;
