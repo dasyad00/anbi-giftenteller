@@ -19,9 +19,11 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions } from './services/gemini';
+import { getAnbiData } from './services/anbi';
 import { Party, type DonationResult, type Transaction } from './lib/types';
 import {
   groupTransactionsByCounterparty,
@@ -44,6 +46,7 @@ export default function App() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
+  const [isRefreshingAnbi, setIsRefreshingAnbi] = useState(false);
 
   useEffect(() => {
     document.title = t('title');
@@ -130,6 +133,18 @@ export default function App() {
       console.error(err);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleRefreshAnbi = async () => {
+    setIsRefreshingAnbi(true);
+    try {
+      await getAnbiData(true);
+    } catch (error) {
+      console.error('Failed to refresh ANBI data:', error);
+      setError('Failed to refresh ANBI data.');
+    } finally {
+      setIsRefreshingAnbi(false);
     }
   };
 
@@ -314,6 +329,33 @@ export default function App() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">
+                    ANBI Database
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Cache the ANBI database for offline use.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleRefreshAnbi}
+                disabled={isRefreshingAnbi}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRefreshingAnbi ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Refresh'
+                )}
+              </button>
             </div>
 
             {/* Future Integration Card */}
