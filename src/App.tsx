@@ -163,7 +163,7 @@ export default function App() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors text-sm font-medium text-slate-600"
             >
               <Globe className="w-4 h-4" />
-              {i18n.language === 'nl' ? t('english') : t('dutch')}
+              {i18n.language === 'nl' ? t('dutch') : t('english')}
             </button>
           </div>
         </div>
