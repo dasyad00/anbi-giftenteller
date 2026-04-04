@@ -1,4 +1,4 @@
-import { getAnbiData } from '../services/anbi';
+import { AnbiOrganisation, getAnbiData } from '../services/anbi';
 import { Party, Transaction } from './types';
 
 export interface GroupedDonation {
@@ -45,8 +45,13 @@ export async function groupTransactionsByCounterparty(
   transactions: Transaction[],
   year: string,
 ): Promise<GroupedDonation[]> {
-  const anbiData = await getAnbiData().catch(() => null);
-  const anbiOrganisations = anbiData?.instellingen?.instelling ?? [];
+  const anbiData = await getAnbiData().catch((e) => {
+    console.error(e);
+    return null;
+  });
+  console.log(anbiData);
+  const anbiOrganisations: AnbiOrganisation[] =
+    anbiData?.beschikking ?? [];
 
   const filtered = transactions.filter((t) => {
     // Basic year check (assuming YYYY-MM-DD or similar format)
