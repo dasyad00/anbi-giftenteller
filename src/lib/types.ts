@@ -1,6 +1,7 @@
 export interface Party {
   name: string;
   iban: string;
+  rsin?: string;
 }
 
 export interface Transaction {

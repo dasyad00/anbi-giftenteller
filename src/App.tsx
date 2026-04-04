@@ -121,7 +121,7 @@ export default function App() {
         setResults(donationResults);
         setGroupedResults([]);
       } else {
-        const grouped = groupTransactionsByCounterparty(
+        const grouped = await groupTransactionsByCounterparty(
           transactions,
           fiscalYear,
         );
@@ -463,6 +463,12 @@ export default function App() {
                                   <p className="text-xs text-slate-500">
                                     {group.transactions.length} transactions
                                   </p>
+                                  {group.counterparty.rsin && (
+                                    <p className="text-xs text-emerald-600 font-medium">
+                                      ANBI Found (RSIN:
+                                      {group.counterparty.rsin})
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <p className="font-bold text-indigo-600">
@@ -477,7 +483,10 @@ export default function App() {
                               </div>
 
                               <AnimatePresence>
-                                {expandedGroups[group.counterparty.iban] && (
+                                {expandedGroups[
+                                  group.counterparty.iban ||
+                                    group.counterparty.name
+                                ] && (
                                   <motion.div
                                     initial={{ height: 0 }}
                                     animate={{ height: 'auto' }}

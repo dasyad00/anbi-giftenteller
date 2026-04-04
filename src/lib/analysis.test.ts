@@ -1,16 +1,30 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { groupTransactionsByCounterparty } from './analysis';
 import { Party, Transaction } from './types';
 
+// Mock the ANBI data service
+vi.mock('../services/anbi', () => ({
+  getAnbiData: vi.fn(),
+}));
+
+import { getAnbiData } from '../services/anbi';
+
+const mockedGetAnbiData = getAnbiData as vi.Mock;
+
 describe('groupTransactionsByCounterparty', () => {
   const charityA: Party = {
-    name: 'Charity A',
+    name: 'Stichting Charity A',
     iban: 'NL1',
   };
   const charityB: Party = {
-    name: 'Charity B',
+    name: 'Goede Doelen B',
     iban: 'NL2',
   };
+  const nonCharity: Party = {
+    name: 'Albert Heijn',
+    iban: 'NL3',
+  };
+
   const mockTransactions: Transaction[] = [
     {
       date: '2025-01-01',
@@ -38,35 +52,116 @@ describe('groupTransactionsByCounterparty', () => {
     }, // Wrong year
     {
       date: '2025-04-01',
-      description: 'Misc',
+      description: 'Groceries',
       amount: 5,
-      counterparty: { name: '', iban: '' },
-    }, // No counterparty
+      counterparty: nonCharity,
+    },
   ];
 
-  it('should group transactions by counterparty for a specific year', () => {
-    const result = groupTransactionsByCounterparty(mockTransactions, '2025');
+  const mockAnbiData = {
+    instellingen: {
+      instelling: [
+        {
+          rsin: '123456789',
+          naam: 'Stichting Charity A',
+          vestigingsPlaats: 'Amsterdam',
+        },
+        {
+          rsin: '987654321',
+          naam: 'Stichting Goede Doelen B',
+          vestigingsPlaats: 'Utrecht',
+        },
+      ],
+    },
+  };
+
+  beforeEach(() => {
+    mockedGetAnbiData.mockResolvedValue(mockAnbiData);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should group transactions and sum totals for a specific year', async () => {
+    const result = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2025',
+    );
 
     expect(result).toHaveLength(3);
 
-    const charityA = result.find((g) => g.counterparty.name === 'Charity A');
-    expect(charityA?.totalAmount).toBe(30);
-    expect(charityA?.transactions).toHaveLength(2);
+    const groupA = result.find(
+      (g) => g.counterparty.name === 'Stichting Charity A',
+    );
+    expect(groupA?.totalAmount).toBe(30);
+    expect(groupA?.transactions).toHaveLength(2);
 
-    const charityB = result.find((g) => g.counterparty.name === 'Charity B');
-    expect(charityB?.totalAmount).toBe(15);
-    expect(charityB?.transactions).toHaveLength(1);
+    const groupB = result.find((g) => g.counterparty.name === 'Goede Doelen B');
+    expect(groupB?.totalAmount).toBe(15);
+    expect(groupB?.transactions).toHaveLength(1);
+
+    const groupC = result.find((g) => g.counterparty.name === 'Albert Heijn');
+    expect(groupC?.totalAmount).toBe(5);
+    expect(groupC?.transactions).toHaveLength(1);
   });
 
-  it('should sort results by total amount descending', () => {
-    const result = groupTransactionsByCounterparty(mockTransactions, '2025');
+  it('should sort results by total amount descending', async () => {
+    const result = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2025',
+    );
     expect(result[0].totalAmount).toBe(30); // Charity A
     expect(result[1].totalAmount).toBe(15); // Charity B
-    expect(result[2].totalAmount).toBe(5); // Misc
+    expect(result[2].totalAmount).toBe(5); // Albert Heijn
   });
 
-  it('should return empty array if no transactions match the year', () => {
-    const result = groupTransactionsByCounterparty(mockTransactions, '2023');
+  it('should return empty array if no transactions match the year', async () => {
+    const result = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2023',
+    );
     expect(result).toHaveLength(0);
+  });
+
+  it('should attempt to match counterparties to ANBI RSINs', async () => {
+    const result = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2025',
+    );
+
+    const groupA = result.find(
+      (g) => g.counterparty.name === 'Stichting Charity A',
+    );
+    expect(groupA?.counterparty.rsin).toBe('123456789');
+
+    // 'Goede Doelen B' should match 'Stichting Goede Doelen B'
+    const groupB = result.find((g) => g.counterparty.name === 'Goede Doelen B');
+    expect(groupB?.counterparty.rsin).toBe('987654321');
+  });
+
+  it('should not assign an RSIN if no match is found', async () => {
+    const result = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2025',
+    );
+
+    const nonCharityGroup = result.find(
+      (g) => g.counterparty.name === 'Albert Heijn',
+    );
+    expect(nonCharityGroup?.counterparty.rsin).toBeUndefined();
+  });
+
+  it('should handle failure of ANBI data fetch gracefully', async () => {
+    mockedGetAnbiData.mockRejectedValue(new Error('Failed to fetch'));
+    const result = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2025',
+    );
+
+    expect(result).toHaveLength(3); // Should still group, just without RSINs
+    result.forEach((group) => {
+      expect(group.counterparty.rsin).toBeUndefined();
+    });
   });
 });
