@@ -40,7 +40,7 @@ export default function App() {
     new Date().getFullYear().toString(),
   );
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<AnalysisMode>('ai');
+  const [mode, setMode] = useState<AnalysisMode>('manual');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
@@ -184,7 +184,7 @@ export default function App() {
               </div>
 
               {/* Mode Selector */}
-              <div className="flex p-1 bg-slate-100 rounded-xl">
+              {/*<div className="flex p-1 bg-slate-100 rounded-xl">
                 <button
                   onClick={() => setMode('ai')}
                   className={cn(
@@ -209,7 +209,7 @@ export default function App() {
                   <Users className="w-4 h-4" />
                   {t('mode_manual')}
                 </button>
-              </div>
+              </div>*/}
 
               {/* Year Selector */}
               <div className="space-y-2">
