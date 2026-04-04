@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
@@ -44,6 +44,10 @@ export default function App() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
+
+  useEffect(() => {
+    document.title = t('title');
+  }, [t]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
