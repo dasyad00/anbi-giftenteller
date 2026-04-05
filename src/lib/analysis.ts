@@ -2,6 +2,7 @@ import { AnbiOrganisation, getAnbiData } from '../services/anbi';
 import { Party, Transaction } from './types';
 
 export interface GroupedDonation {
+  id: string;
   counterparty: Party;
   totalAmount: number;
   transactions: Transaction[];
@@ -100,6 +101,7 @@ export async function groupTransactionsByCounterparty(
         anbiOrganisations,
       );
       groups[key] = {
+        id: key,
         counterparty: { ...t.counterparty, name: realRecipientName, rsin },
         totalAmount: 0,
         transactions: [],

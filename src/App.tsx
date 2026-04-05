@@ -148,8 +148,8 @@ export default function App() {
     }
   };
 
-  const toggleGroup = (key: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleGroup = (id: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const totalDonations =
@@ -448,9 +448,7 @@ export default function App() {
                               className="border border-slate-100 rounded-xl overflow-hidden"
                             >
                               <div
-                                onClick={() =>
-                                  toggleGroup(group.counterparty.iban)
-                                }
+                                onClick={() => toggleGroup(group.id)}
                                 className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
                               >
                                 <div className="space-y-1">
@@ -474,7 +472,7 @@ export default function App() {
                                   <p className="font-bold text-indigo-600">
                                     €{group.totalAmount.toFixed(2)}
                                   </p>
-                                  {expandedGroups[group.counterparty.iban] ? (
+                                  {expandedGroups[group.id] ? (
                                     <ChevronUp className="w-4 h-4 text-slate-400" />
                                   ) : (
                                     <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -483,10 +481,7 @@ export default function App() {
                               </div>
 
                               <AnimatePresence>
-                                {expandedGroups[
-                                  group.counterparty.iban ||
-                                    group.counterparty.name
-                                ] && (
+                                {expandedGroups[group.id] && (
                                   <motion.div
                                     initial={{ height: 0 }}
                                     animate={{ height: 'auto' }}
