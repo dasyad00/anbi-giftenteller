@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useDeferredValue } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, X, AlertCircle } from 'lucide-react';
 import { AnbiOrganisation } from '../services/anbi';
@@ -17,18 +17,31 @@ export function AnbiModal({
   anbiOrganisations,
 }: AnbiModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredQuery = useDeferredValue(searchQuery);
 
   const filteredOrganisations = useMemo(() => {
-    if (searchQuery.length < 2) return [];
-    const query = searchQuery.toLowerCase();
-    return anbiOrganisations
-      .filter(
-        (anbi) =>
-          anbi.naam?.toLowerCase().includes(query) ||
-          String(anbi.fiscaalNummer ?? '').includes(query),
-      )
-      .slice(0, 100);
-  }, [anbiOrganisations, searchQuery]);
+    if (deferredQuery.length < 2) return [];
+
+    const query = deferredQuery.toLowerCase();
+    const results: AnbiOrganisation[] = [];
+    const limit = 100;
+
+    for (let i = 0; i < anbiOrganisations.length; i++) {
+      const anbi = anbiOrganisations[i];
+      const name = anbi.naam;
+      const rsin = anbi.fiscaalNummer;
+
+      const matchesName = name && name.toLowerCase().includes(query);
+      const matchesRSIN = rsin && String(rsin).includes(query);
+
+      if (matchesName || matchesRSIN) {
+        results.push(anbi);
+        if (results.length >= limit) break;
+      }
+    }
+
+    return results;
+  }, [anbiOrganisations, deferredQuery]);
 
   const handleClose = () => {
     setSearchQuery('');
