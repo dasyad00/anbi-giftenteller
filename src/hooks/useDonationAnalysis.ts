@@ -12,6 +12,8 @@ import {
 } from '../lib/types';
 import { AnbiOrganisation } from '../services/anbi';
 
+import { reportError } from '../lib/rollbar';
+
 export function useDonationAnalysis() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -53,7 +55,7 @@ export function useDonationAnalysis() {
       }
     } catch (err) {
       setError(t('analysis_failed'));
-      console.error(err);
+      reportError(err, 'Donation analysis failed');
     } finally {
       setIsAnalyzing(false);
     }

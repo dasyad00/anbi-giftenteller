@@ -1,4 +1,5 @@
 import { AnbiOrganisation, getAnbiData } from '../services/anbi';
+import { reportError } from './rollbar';
 import { Party, Transaction } from './types';
 
 export interface GroupedDonation {
@@ -83,7 +84,7 @@ export async function groupTransactionsByCounterparty(
   year: string,
 ): Promise<GroupedDonation[]> {
   const anbiData = await getAnbiData().catch((e) => {
-    console.error(e);
+    reportError(e, 'Failed to get ANBI data');
     return null;
   });
   // console.log(anbiData);

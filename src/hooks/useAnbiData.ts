@@ -7,6 +7,8 @@ import {
   getLastAnbiRefreshTime,
 } from '../services/anbi';
 
+import { reportError } from '../lib/rollbar';
+
 export function useAnbiData() {
   const { t } = useTranslation();
   const [anbiOrganisations, setAnbiOrganisations] = useState<
@@ -40,8 +42,8 @@ export function useAnbiData() {
       setAnbiMetadata(data?.header ?? null);
       setLastRefreshTime(Date.now());
     } catch (err) {
-      console.error('Failed to refresh ANBI data:', err);
       setError(t('anbi_refresh_failed'));
+      reportError(err, 'Failed to refresh ANBI data');
     } finally {
       setIsRefreshingAnbi(false);
     }
