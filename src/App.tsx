@@ -177,6 +177,22 @@ export default function App() {
     setIsAnbiModalOpen(true);
   };
 
+  const handleDissociateAnbi = (groupId: string) => {
+    const updatedGroupedResults = groupedResults.map((g) =>
+      g.id === groupId
+        ? {
+            ...g,
+            counterparty: {
+              ...g.counterparty,
+              rsin: undefined,
+              anbiName: undefined,
+            },
+          }
+        : g,
+    );
+    setGroupedResults(updatedGroupedResults);
+  };
+
   const handleAnbiSelection = (anbi: AnbiOrganisation) => {
     if (!selectedGroup) return;
 
@@ -569,6 +585,16 @@ export default function App() {
                                             ? 'Change'
                                             : 'Associate with an ANBI'}
                                         </button>
+                                        {group.counterparty.rsin && (
+                                          <button
+                                            onClick={() =>
+                                              handleDissociateAnbi(group.id)
+                                            }
+                                            className="text-sm font-medium text-red-600 hover:text-red-700"
+                                          >
+                                            Dissociate
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   </motion.div>
