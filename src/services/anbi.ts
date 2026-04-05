@@ -53,12 +53,12 @@ export interface AnbiOrganisationDataset {
 }
 
 export interface AnbiOrganisation {
-  dossierNummer: string;
+  dossierNummer: number;
   naam: string;
   aliasNaam?: string;
   ingangsDatum?: string;
   vestigingsPlaats?: string;
-  fiscaalNummer?: string;
+  fiscaalNummer?: number;
   webSite?: string;
 }
 

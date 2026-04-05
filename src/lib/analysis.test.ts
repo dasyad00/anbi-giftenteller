@@ -7,7 +7,7 @@ vi.mock('../services/anbi', () => ({
   getAnbiData: vi.fn(),
 }));
 
-import { getAnbiData } from '../services/anbi';
+import { AnbiOrganisationDataset, getAnbiData } from '../services/anbi';
 
 const mockedGetAnbiData = getAnbiData as vi.Mock;
 
@@ -58,21 +58,25 @@ describe('groupTransactionsByCounterparty', () => {
     },
   ];
 
-  const mockAnbiData = {
-    instellingen: {
-      instelling: [
-        {
-          rsin: '123456789',
-          naam: 'Stichting Charity A',
-          vestigingsPlaats: 'Amsterdam',
-        },
-        {
-          rsin: '987654321',
-          naam: 'Stichting Goede Doelen B',
-          vestigingsPlaats: 'Utrecht',
-        },
-      ],
+  const mockAnbiData: AnbiOrganisationDataset = {
+    header: {
+      aanmaakDatum: '2026-01-01',
+      versie: 1,
     },
+    beschikking: [
+      {
+        dossierNummer: 1,
+        fiscaalNummer: 123456789,
+        naam: 'Stichting Charity A',
+        vestigingsPlaats: 'Amsterdam',
+      },
+      {
+        dossierNummer: 2,
+        fiscaalNummer: 987654321,
+        naam: 'Stichting Goede Doelen B',
+        vestigingsPlaats: 'Utrecht',
+      },
+    ],
   };
 
   beforeEach(() => {
@@ -133,11 +137,11 @@ describe('groupTransactionsByCounterparty', () => {
     const groupA = result.find(
       (g) => g.counterparty.name === 'Stichting Charity A',
     );
-    expect(groupA?.counterparty.rsin).toBe('123456789');
+    expect(groupA?.counterparty.rsin).toBe(123456789);
 
     // 'Goede Doelen B' should match 'Stichting Goede Doelen B'
     const groupB = result.find((g) => g.counterparty.name === 'Goede Doelen B');
-    expect(groupB?.counterparty.rsin).toBe('987654321');
+    expect(groupB?.counterparty.rsin).toBe(987654321);
   });
 
   it('should not assign an RSIN if no match is found', async () => {
