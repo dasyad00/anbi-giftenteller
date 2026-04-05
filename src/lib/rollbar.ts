@@ -5,6 +5,14 @@ const rollbar = new Rollbar({
   environment: import.meta.env.MODE,
   captureUncaught: true,
   captureUnhandledRejections: true,
+  payload: {
+    client: {
+      javascript: {
+        code_version: import.meta.env.COMMIT_REF,
+        source_map_enabled: true,
+      },
+    },
+  },
 });
 
 /**
@@ -12,7 +20,10 @@ const rollbar = new Rollbar({
  * @param error The error object or message to report.
  * @param context Additional metadata or a descriptive message for context.
  */
-export function reportError(error: unknown, context?: string | Record<string, any>) {
+export function reportError(
+  error: unknown,
+  context?: string | Record<string, any>,
+) {
   console.error(context || 'Error caught:', error);
 
   if (typeof context === 'string') {
