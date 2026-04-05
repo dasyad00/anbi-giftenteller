@@ -19,3 +19,8 @@ export interface DonationResult {
   isAnbi: boolean;
   confidence: number;
 }
+
+export interface ManualCorrection {
+  originalGroupId: string;
+  correctedCounterpartyName: string;
+}

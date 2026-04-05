@@ -5,6 +5,7 @@ export interface GroupedDonation {
   counterparty: Party;
   totalAmount: number;
   transactions: Transaction[];
+  manuallyEdited?: boolean;
 }
 
 function areStringsSimilar(strA: string, strB: string): boolean {
@@ -38,6 +39,36 @@ function findRsinForCounterparty(
 }
 
 /**
+ * Extracts the intended recipient from the transaction if a payment proxy is used.
+ * @param transaction The transaction to parse.
+ * @returns The (potentially corrected) name of the counterparty.
+ */
+function getRealRecipientName(transaction: Transaction): string {
+  const { description, counterparty } = transaction;
+  const counterpartyName = counterparty.name.toLowerCase();
+
+  // If the counterparty name includes a payment proxy, the description may hold the real recipient.
+  const viaBunq = ' via bunq';
+  const viaIng = ' via ING Zakelijk Betaalverzoek';
+  const sumup = 'Sumup *';
+
+  if (
+    counterpartyName.includes(viaBunq) ||
+    counterpartyName.includes(viaIng) ||
+    counterpartyName.includes(sumup)
+  ) {
+    // A simple heuristic: the real recipient is often at the start of the description.
+    // This is a guess and might need to be more sophisticated.
+    const potentialName = description.split(/,|\./)[0].trim();
+    if (potentialName) {
+      return potentialName;
+    }
+  }
+
+  return counterparty.name;
+}
+
+/**
  * Groups transactions by counterparty and sums their amounts.
  * Useful for manual review of recurring donations.
  */
@@ -50,8 +81,7 @@ export async function groupTransactionsByCounterparty(
     return null;
   });
   console.log(anbiData);
-  const anbiOrganisations: AnbiOrganisation[] =
-    anbiData?.beschikking ?? [];
+  const anbiOrganisations: AnbiOrganisation[] = anbiData?.beschikking ?? [];
 
   const filtered = transactions.filter((t) => {
     // Basic year check (assuming YYYY-MM-DD or similar format)
@@ -61,15 +91,16 @@ export async function groupTransactionsByCounterparty(
   const groups: Record<string, GroupedDonation> = {};
 
   for (const t of filtered) {
-    const counterparty = t.counterparty;
-    const key = counterparty.iban;
+    const realRecipientName = getRealRecipientName(t);
+    const key = `${t.counterparty.iban}#${realRecipientName}`;
+
     if (!groups[key]) {
       const rsin = findRsinForCounterparty(
-        counterparty.name,
+        realRecipientName,
         anbiOrganisations,
       );
       groups[key] = {
-        counterparty: { ...counterparty, rsin },
+        counterparty: { ...t.counterparty, name: realRecipientName, rsin },
         totalAmount: 0,
         transactions: [],
       };
