@@ -5,16 +5,19 @@ import { GroupedDonation } from './analysis';
 describe('applyManualCorrections', () => {
   const mockGroupedDonations: GroupedDonation[] = [
     {
+      id: '1',
       counterparty: { name: 'Charity A', iban: 'NL1', rsin: 123 },
       totalAmount: 100,
       transactions: [],
     },
     {
+      id: '2',
       counterparty: { name: 'Charity B', iban: 'NL2' },
       totalAmount: 50,
       transactions: [],
     },
     {
+      id: '3',
       counterparty: { name: 'Mistakenly Grouped', iban: 'NL3' },
       totalAmount: 25,
       transactions: [],
