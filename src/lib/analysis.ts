@@ -23,10 +23,10 @@ function areStringsSimilar(strA: string, strB: string): boolean {
   return cleanA.includes(cleanB) || cleanB.includes(cleanA);
 }
 
-function findRsinForCounterparty(
+function findAnbiForCounterparty(
   counterpartyName: string,
   anbiOrganisations: any[],
-): number | undefined {
+): AnbiOrganisation | undefined {
   if (!anbiOrganisations || !counterpartyName) {
     return undefined;
   }
@@ -36,7 +36,7 @@ function findRsinForCounterparty(
     return areStringsSimilar(counterpartyName, anbi.naam);
   });
 
-  return match ? match.fiscaalNummer : undefined;
+  return match;
 }
 
 /**
@@ -96,13 +96,18 @@ export async function groupTransactionsByCounterparty(
     const key = `${realRecipientName}#${t.counterparty.iban}`;
 
     if (!groups[key]) {
-      const rsin = findRsinForCounterparty(
+      const anbi = findAnbiForCounterparty(
         realRecipientName,
         anbiOrganisations,
       );
       groups[key] = {
         id: key,
-        counterparty: { ...t.counterparty, name: realRecipientName, rsin },
+        counterparty: {
+          ...t.counterparty,
+          name: realRecipientName,
+          rsin: anbi?.fiscaalNummer,
+          anbiName: anbi?.naam,
+        },
         totalAmount: 0,
         transactions: [],
       };

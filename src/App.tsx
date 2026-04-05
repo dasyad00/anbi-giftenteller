@@ -20,10 +20,12 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Search,
+  X,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions } from './services/gemini';
-import { getAnbiData } from './services/anbi';
+import { AnbiOrganisation, getAnbiData } from './services/anbi';
 import { Party, type DonationResult, type Transaction } from './lib/types';
 import {
   groupTransactionsByCounterparty,
@@ -47,9 +49,17 @@ export default function App() {
     {},
   );
   const [isRefreshingAnbi, setIsRefreshingAnbi] = useState(false);
+  const [isAnbiModalOpen, setIsAnbiModalOpen] = useState(false);
+  const [anbiOrganisations, setAnbiOrganisations] = useState<
+    AnbiOrganisation[]
+  >([]);
+  const [selectedGroup, setSelectedGroup] = useState<GroupedDonation | null>(
+    null,
+  );
 
   useEffect(() => {
     document.title = t('title');
+    getAnbiData().then((data) => setAnbiOrganisations(data?.beschikking ?? []));
   }, [t]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -139,13 +149,40 @@ export default function App() {
   const handleRefreshAnbi = async () => {
     setIsRefreshingAnbi(true);
     try {
-      await getAnbiData(true);
+      const data = await getAnbiData(true);
+      setAnbiOrganisations(data?.beschikking ?? []);
     } catch (error) {
       console.error('Failed to refresh ANBI data:', error);
       setError('Failed to refresh ANBI data.');
     } finally {
       setIsRefreshingAnbi(false);
     }
+  };
+
+  const handleAssociateAnbi = (group: GroupedDonation) => {
+    setSelectedGroup(group);
+    setIsAnbiModalOpen(true);
+  };
+
+  const handleAnbiSelection = (anbi: AnbiOrganisation) => {
+    if (!selectedGroup) return;
+
+    const updatedGroupedResults = groupedResults.map((g) =>
+      g.id === selectedGroup.id
+        ? {
+            ...g,
+            counterparty: {
+              ...g.counterparty,
+              rsin: anbi.fiscaalNummer,
+              anbiName: anbi.naam,
+            },
+          }
+        : g,
+    );
+
+    setGroupedResults(updatedGroupedResults);
+    setIsAnbiModalOpen(false);
+    setSelectedGroup(null);
   };
 
   const toggleGroup = (id: string) => {
@@ -463,7 +500,7 @@ export default function App() {
                                   </p>
                                   {group.counterparty.rsin && (
                                     <p className="text-xs text-emerald-600 font-medium">
-                                      ANBI Found (RSIN:
+                                      ANBI: {group.counterparty.anbiName} (RSIN:
                                       {group.counterparty.rsin})
                                     </p>
                                   )}
@@ -507,6 +544,18 @@ export default function App() {
                                           </span>
                                         </div>
                                       ))}
+                                      <div className="pt-2">
+                                        <button
+                                          onClick={() =>
+                                            handleAssociateAnbi(group)
+                                          }
+                                          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                                        >
+                                          {group.counterparty.rsin
+                                            ? 'Change'
+                                            : 'Associate with an ANBI'}
+                                        </button>
+                                      </div>
                                     </div>
                                   </motion.div>
                                 )}
@@ -559,6 +608,55 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      <AnimatePresence>
+        {isAnbiModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center p-4"
+          >
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="font-semibold text-lg">Associate with ANBI</h2>
+                <button
+                  onClick={() => setIsAnbiModalOpen(false)}
+                  className="p-1 rounded-full hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search for an ANBI..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+                <div className="max-h-96 overflow-y-auto space-y-2">
+                  {anbiOrganisations.map((anbi) => (
+                    <div
+                      key={anbi.fiscaalNummer}
+                      onClick={() => handleAnbiSelection(anbi)}
+                      className="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <p className="font-semibold text-slate-800">
+                        {anbi.naam}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {anbi.vestigingsPlaats} - {anbi.fiscaalNummer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <footer className="max-w-5xl mx-auto px-4 py-8 border-t border-slate-200 mt-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
