@@ -25,7 +25,7 @@ function areStringsSimilar(strA: string, strB: string): boolean {
 function findRsinForCounterparty(
   counterpartyName: string,
   anbiOrganisations: any[],
-): string | undefined {
+): number | undefined {
   if (!anbiOrganisations || !counterpartyName) {
     return undefined;
   }
@@ -35,7 +35,7 @@ function findRsinForCounterparty(
     return areStringsSimilar(counterpartyName, anbi.naam);
   });
 
-  return match ? match.rsin : undefined;
+  return match ? match.fiscaalNummer : undefined;
 }
 
 /**
@@ -80,7 +80,7 @@ export async function groupTransactionsByCounterparty(
     console.error(e);
     return null;
   });
-  console.log(anbiData);
+  // console.log(anbiData);
   const anbiOrganisations: AnbiOrganisation[] = anbiData?.beschikking ?? [];
 
   const filtered = transactions.filter((t) => {
@@ -92,7 +92,7 @@ export async function groupTransactionsByCounterparty(
 
   for (const t of filtered) {
     const realRecipientName = getRealRecipientName(t);
-    const key = `${t.counterparty.iban}#${realRecipientName}`;
+    const key = `${realRecipientName}#${t.counterparty.iban}`;
 
     if (!groups[key]) {
       const rsin = findRsinForCounterparty(

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { groupTransactionsByCounterparty } from './analysis';
 import { Party, Transaction } from './types';
+import { applyManualCorrections } from './manualCorrection';
 
 // Mock the ANBI data service
 vi.mock('../services/anbi', () => ({
@@ -167,5 +168,40 @@ describe('groupTransactionsByCounterparty', () => {
     result.forEach((group) => {
       expect(group.counterparty.rsin).toBeUndefined();
     });
+  });
+
+  it('should handle transactions via payment proxies', async () => {
+    const transactions: Transaction[] = [
+      {
+        date: '2025-01-01',
+        description: 'Real Charity Name',
+        amount: 10,
+        counterparty: { name: 'Payment via bunq', iban: 'NL4' },
+      },
+    ];
+
+    const result = await groupTransactionsByCounterparty(transactions, '2025');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].counterparty.name).toBe('Real Charity Name');
+  });
+
+  it('should apply manual corrections', async () => {
+    const initialDonations = await groupTransactionsByCounterparty(
+      mockTransactions,
+      '2025',
+    );
+    const correction = {
+      originalGroupId: `${initialDonations[2].counterparty.name}#${initialDonations[2].counterparty.iban}`,
+      correctedCounterpartyName: 'Corrected Name',
+    };
+
+    const correctedDonations = applyManualCorrections(initialDonations, [
+      correction,
+    ]);
+
+    const correctedGroup = correctedDonations.find((d) => d.manuallyEdited);
+
+    expect(correctedGroup?.counterparty.name).toBe('Corrected Name');
   });
 });

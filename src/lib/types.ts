@@ -1,7 +1,7 @@
 export interface Party {
   name: string;
   iban: string;
-  rsin?: string;
+  rsin?: number;
 }
 
 export interface Transaction {
@@ -18,9 +18,4 @@ export interface DonationResult {
   description: string;
   isAnbi: boolean;
   confidence: number;
-}
-
-export interface ManualCorrection {
-  originalGroupId: string;
-  correctedCounterpartyName: string;
 }
