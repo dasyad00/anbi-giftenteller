@@ -639,12 +639,15 @@ export default function App() {
                 <div className="max-h-96 overflow-y-auto space-y-2">
                   {anbiOrganisations.map((anbi) => (
                     <div
-                      key={anbi.fiscaalNummer}
+                      key={anbi.dossierNummer}
                       onClick={() => handleAnbiSelection(anbi)}
                       className="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
                     >
                       <p className="font-semibold text-slate-800">
                         {anbi.naam}
+                      </p>
+                      <p className="text-xs text-slate-600 font-medium">
+                        RSIN: {anbi.fiscaalNummer ?? '-'}
                       </p>
                       <p className="text-sm text-slate-500">
                         {anbi.vestigingsPlaats} - {anbi.fiscaalNummer}
