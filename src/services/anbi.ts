@@ -47,7 +47,7 @@ async function setToDB(key: string, value: any) {
 
 // --- Data Fetching Logic ---
 
-interface AnbiOrganisationDataset {
+export interface AnbiOrganisationDataset {
   beschikking: AnbiOrganisation[];
   header: { aanmaakDatum: string; versie: number };
 }
@@ -73,9 +73,12 @@ const fetchData = async (): Promise<AnbiOrganisationDataset> => {
   if (!xmlFile) {
     throw new Error('anbi.xml not found in the zip file');
   }
-  const xmlContent = await xmlFile.async('text');
+  const xmlBytes = await xmlFile.async('uint8array');
+  const decoder = new TextDecoder('iso-8859-1');
+  const xmlContent = decoder.decode(xmlBytes);
 
   const parser = new XMLParser({
+    // ignoreAttributes: false,
     processEntities: {
       enabled: true,
       maxTotalExpansions: 4000,
