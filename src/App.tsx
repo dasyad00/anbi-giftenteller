@@ -559,7 +559,7 @@ export default function App() {
                                           </span>
                                         </div>
                                       ))}
-                                      <div className="pt-2">
+                                      <div className="pt-2 flex items-center">
                                         <button
                                           onClick={() =>
                                             handleAssociateAnbi(group)
@@ -571,14 +571,17 @@ export default function App() {
                                             : 'Associate with an ANBI'}
                                         </button>
                                         {group.counterparty.rsin && (
-                                          <button
-                                            onClick={() =>
-                                              handleDissociateAnbi(group.id)
-                                            }
-                                            className="text-sm font-medium text-red-600 hover:text-red-700"
-                                          >
-                                            Dissociate
-                                          </button>
+                                          <>
+                                            <div className="h-4 w-px bg-slate-200 mx-3"></div>
+                                            <button
+                                              onClick={() =>
+                                                handleDissociateAnbi(group.id)
+                                              }
+                                              className="text-sm font-medium text-red-600 hover:text-red-700"
+                                            >
+                                              Dissociate
+                                            </button>
+                                          </>
                                         )}
                                       </div>
                                     </div>
