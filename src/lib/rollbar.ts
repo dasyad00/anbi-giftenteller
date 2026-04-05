@@ -1,6 +1,6 @@
 import Rollbar from 'rollbar';
 
-const rollbar = new Rollbar({
+export const rollbarConfig: Rollbar.Configuration = {
   accessToken: import.meta.env.VITE_ROLLBAR_ACCESS_TOKEN,
   environment: import.meta.env.MODE,
   captureUncaught: true,
@@ -13,7 +13,9 @@ const rollbar = new Rollbar({
       },
     },
   },
-});
+};
+
+const rollbar = new Rollbar(rollbarConfig);
 
 /**
  * Cleanly reports an error to Rollbar and logs it to the console.

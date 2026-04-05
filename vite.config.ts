@@ -3,11 +3,23 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
+import viteRollbar from 'vite-plugin-rollbar-sourcemap';
+import { rollbarConfig } from './src/lib/rollbar';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  const deployUrl = new URL(process.env.DEPLOY_URL);
+  const baseUrl = deployUrl.origin;
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      viteRollbar({
+        accessToken: rollbarConfig.accessToken,
+        version: rollbarConfig.version,
+        baseUrl: baseUrl,
+      }),
+    ],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
