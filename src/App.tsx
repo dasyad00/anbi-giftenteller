@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
@@ -19,9 +19,17 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions } from './services/gemini';
+import {
+  AnbiMetadata,
+  AnbiOrganisation,
+  getAnbiData,
+  getLastAnbiRefreshTime,
+} from './services/anbi';
+import { AnbiModal } from './components/AnbiModal';
 import { Party, type DonationResult, type Transaction } from './lib/types';
 import {
   groupTransactionsByCounterparty,
@@ -44,10 +52,31 @@ export default function App() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
+  const [isRefreshingAnbi, setIsRefreshingAnbi] = useState(false);
+  const [isAnbiModalOpen, setIsAnbiModalOpen] = useState(false);
+  const [anbiOrganisations, setAnbiOrganisations] = useState<
+    AnbiOrganisation[]
+  >([]);
+  const [anbiMetadata, setAnbiMetadata] = useState<AnbiMetadata | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [selectedGroup, setSelectedGroup] = useState<GroupedDonation | null>(
+    null,
+  );
 
   useEffect(() => {
     document.title = t('title');
+    getAnbiData().then((data) => {
+      setAnbiOrganisations(data?.beschikking ?? []);
+      setAnbiMetadata(data?.header ?? null);
+    });
+    getLastAnbiRefreshTime().then(setLastRefreshTime);
   }, [t]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -73,10 +102,10 @@ export default function App() {
             const counterparty: Party = {
               name: row['Name Counterpty'] || '',
               iban:
-                row['Tegenrekening'] ||
-                row['Counterparty'] ||
-                row['Counterpty IBAN/BBAN'] ||
-                '',
+              row['Tegenrekening'] ||
+              row['Counterparty'] ||
+              row['Counterpty IBAN/BBAN'] ||
+              '',
             };
             const amount = parseFloat(amountStr.toString().replace(',', '.'));
             return { date, description, amount, counterparty };
@@ -84,9 +113,7 @@ export default function App() {
           .filter((t) => t.date && t.amount);
 
         if (mapped.length === 0) {
-          setError(
-            'Could not find valid transactions in the CSV. Please check the format.',
-          );
+          setError(t('csv_error_valid'));
         } else {
           setTransactions(mapped);
           setResults([]);
@@ -94,10 +121,10 @@ export default function App() {
         }
       },
       error: () => {
-        setError('Error parsing CSV file.');
+        setError(t('csv_error_parse'));
       },
     });
-  }, []);
+  }, [t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -118,7 +145,7 @@ export default function App() {
         setResults(donationResults);
         setGroupedResults([]);
       } else {
-        const grouped = groupTransactionsByCounterparty(
+        const grouped = await groupTransactionsByCounterparty(
           transactions,
           fiscalYear,
         );
@@ -126,15 +153,72 @@ export default function App() {
         setResults([]);
       }
     } catch (err) {
-      setError('Analysis failed. Please try again.');
+      setError(t('analysis_failed'));
       console.error(err);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const toggleGroup = (key: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  const handleRefreshAnbi = async () => {
+    setIsRefreshingAnbi(true);
+    try {
+      const data = await getAnbiData(true);
+      setAnbiOrganisations(data?.beschikking ?? []);
+      setAnbiMetadata(data?.header ?? null);
+      setLastRefreshTime(Date.now());
+    } catch (error) {
+      console.error('Failed to refresh ANBI data:', error);
+      setError(t('anbi_refresh_failed'));
+    } finally {
+      setIsRefreshingAnbi(false);
+    }
+  };
+
+  const handleAssociateAnbi = (group: GroupedDonation) => {
+    setSelectedGroup(group);
+    setIsAnbiModalOpen(true);
+  };
+
+  const handleDissociateAnbi = (groupId: string) => {
+    const updatedGroupedResults = groupedResults.map((g) =>
+      g.id === groupId
+        ? {
+            ...g,
+            counterparty: {
+              ...g.counterparty,
+              rsin: undefined,
+              anbiName: undefined,
+            },
+          }
+        : g,
+    );
+    setGroupedResults(updatedGroupedResults);
+  };
+
+  const handleAnbiSelection = (anbi: AnbiOrganisation) => {
+    if (!selectedGroup) return;
+
+    const updatedGroupedResults = groupedResults.map((g) =>
+      g.id === selectedGroup.id
+        ? {
+            ...g,
+            counterparty: {
+              ...g.counterparty,
+              rsin: anbi.fiscaalNummer,
+              anbiName: anbi.naam,
+            },
+          }
+        : g,
+    );
+
+    setGroupedResults(updatedGroupedResults);
+    setIsAnbiModalOpen(false);
+    setSelectedGroup(null);
+  };
+
+  const toggleGroup = (id: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const totalDonations =
@@ -260,11 +344,13 @@ export default function App() {
                   <div>
                     <p className="font-medium text-slate-800">
                       {transactions.length > 0
-                        ? `${transactions.length} transactions loaded`
+                        ? t('transactions_loaded', {
+                            count: transactions.length,
+                          })
                         : t('upload_desc')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      CSV format from ING, ABN, Rabo, etc.
+                      {t('csv_banks_info')}
                     </p>
                   </div>
                 </div>
@@ -307,13 +393,69 @@ export default function App() {
                 <Info className="w-5 h-5 text-indigo-600 shrink-0" />
                 <div className="space-y-2">
                   <h3 className="font-semibold text-indigo-900 text-sm">
-                    ANBI?
+                    {t('anbi_question')}
                   </h3>
                   <p className="text-sm text-indigo-800/80 leading-relaxed">
                     {t('anbi_explanation')}
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center">
+                  <RefreshCw className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800">
+                    ANBI Database
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {anbiMetadata
+                      ? t('anbi_version', {
+                          version: anbiMetadata.versie,
+                          date: new Date(
+                            anbiMetadata.aanmaakDatum,
+                          ).toLocaleDateString(i18n.language, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          }),
+                        })
+                      : t('anbi_source')}
+                  </p>
+                </div>
+              </div>
+              {(() => {
+                const COOLDOWN_MS = 15 * 60 * 1000;
+                const remaining = lastRefreshTime
+                  ? lastRefreshTime + COOLDOWN_MS - currentTime
+                  : 0;
+                const isOnCooldown = remaining > 0;
+
+                return (
+                  <button
+                    onClick={handleRefreshAnbi}
+                    disabled={isRefreshingAnbi || isOnCooldown}
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-right"
+                  >
+                    {isRefreshingAnbi ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>{t('refreshing')}</span>
+                      </div>
+                    ) : isOnCooldown ? (
+                      t('refresh_cooldown', {
+                        minutes: Math.floor(remaining / 60000),
+                        seconds: Math.floor((remaining % 60000) / 1000),
+                      })
+                    ) : (
+                      t('refresh_btn')
+                    )}
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Future Integration Card */}
@@ -326,9 +468,7 @@ export default function App() {
                   <p className="text-sm font-medium text-slate-800">
                     {t('future_banking')}
                   </p>
-                  <p className="text-xs text-slate-500">
-                    Open Banking (PSD2) API
-                  </p>
+                  <p className="text-xs text-slate-500">{t('psd2_api')}</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
@@ -365,7 +505,7 @@ export default function App() {
                         <div className="flex gap-2">
                           <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5">
                             <Download className="w-4 h-4" />
-                            Export PDF
+                            {t('export_pdf')}
                           </button>
                         </div>
                       </div>
@@ -408,9 +548,7 @@ export default function App() {
                               className="border border-slate-100 rounded-xl overflow-hidden"
                             >
                               <div
-                                onClick={() =>
-                                  toggleGroup(group.counterparty.iban)
-                                }
+                                onClick={() => toggleGroup(group.id)}
                                 className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
                               >
                                 <div className="space-y-1">
@@ -421,14 +559,22 @@ export default function App() {
                                     {group.counterparty.iban}
                                   </p>
                                   <p className="text-xs text-slate-500">
-                                    {group.transactions.length} transactions
+                                    {t('transaction_count', {
+                                      count: group.transactions.length,
+                                    })}
                                   </p>
+                                  {group.counterparty.rsin && (
+                                    <p className="text-xs text-emerald-600 font-medium">
+                                      ANBI: {group.counterparty.anbiName} (RSIN:
+                                      {group.counterparty.rsin})
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-4">
                                   <p className="font-bold text-indigo-600">
                                     €{group.totalAmount.toFixed(2)}
                                   </p>
-                                  {expandedGroups[group.counterparty.iban] ? (
+                                  {expandedGroups[group.id] ? (
                                     <ChevronUp className="w-4 h-4 text-slate-400" />
                                   ) : (
                                     <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -437,7 +583,7 @@ export default function App() {
                               </div>
 
                               <AnimatePresence>
-                                {expandedGroups[group.counterparty.iban] && (
+                                {expandedGroups[group.id] && (
                                   <motion.div
                                     initial={{ height: 0 }}
                                     animate={{ height: 'auto' }}
@@ -463,6 +609,31 @@ export default function App() {
                                           </span>
                                         </div>
                                       ))}
+                                      <div className="pt-2 flex items-center">
+                                        <button
+                                          onClick={() =>
+                                            handleAssociateAnbi(group)
+                                          }
+                                          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                                        >
+                                          {group.counterparty.rsin
+                                            ? t('change')
+                                            : t('associate_anbi')}
+                                        </button>
+                                        {group.counterparty.rsin && (
+                                          <>
+                                            <div className="h-4 w-px bg-slate-200 mx-3"></div>
+                                            <button
+                                              onClick={() =>
+                                                handleDissociateAnbi(group.id)
+                                              }
+                                              className="text-sm font-medium text-red-600 hover:text-red-700"
+                                            >
+                                              {t('dissociate')}
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </motion.div>
                                 )}
@@ -492,8 +663,7 @@ export default function App() {
                   <div>
                     <h3 className="font-bold text-lg">{t('analyze')}</h3>
                     <p className="text-slate-500 max-w-xs mx-auto">
-                      Click the analyze button to process your statement using{' '}
-                      {mode === 'ai' ? 'AI' : 'manual grouping'}.
+                      {t('upload_prompt')}
                     </p>
                   </div>
                 </motion.div>
@@ -503,10 +673,11 @@ export default function App() {
                     <TrendingUp className="text-slate-300 w-12 h-12" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-bold text-xl">Ready to calculate</h3>
+                    <h3 className="font-bold text-xl">
+                      {t('ready_to_calculate')}
+                    </h3>
                     <p className="text-slate-500 max-w-xs">
-                      Upload your bank statement to start tracking your
-                      donations.
+                      {t('upload_prompt')}
                     </p>
                   </div>
                 </div>
@@ -516,18 +687,25 @@ export default function App() {
         </div>
       </main>
 
+      <AnbiModal
+        isOpen={isAnbiModalOpen}
+        onClose={() => setIsAnbiModalOpen(false)}
+        onSelect={handleAnbiSelection}
+        anbiOrganisations={anbiOrganisations}
+      />
+
       <footer className="max-w-5xl mx-auto px-4 py-8 border-t border-slate-200 mt-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
-          <p>© 2026 ANBI Donation Tracker. Built with Google AI Studio.</p>
+          <p>© 2026 ANBI Donation Tracker. {t('built_with')}</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-slate-600">
-              Privacy
+              {t('privacy')}
             </a>
             <a href="#" className="hover:text-slate-600">
-              Terms
+              {t('terms')}
             </a>
             <a href="#" className="hover:text-slate-600">
-              Security
+              {t('security')}
             </a>
           </div>
         </div>

@@ -1,0 +1,152 @@
+import { useMemo, useState, useDeferredValue } from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, X, AlertCircle } from 'lucide-react';
+import { AnbiOrganisation } from '../services/anbi';
+
+interface AnbiModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (anbi: AnbiOrganisation) => void;
+  anbiOrganisations: AnbiOrganisation[];
+}
+
+export function AnbiModal({
+  isOpen,
+  onClose,
+  onSelect,
+  anbiOrganisations,
+}: AnbiModalProps) {
+  const { t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState('');
+  const deferredQuery = useDeferredValue(searchQuery);
+
+  const filteredOrganisations = useMemo(() => {
+    if (deferredQuery.length < 2) return [];
+
+    const query = deferredQuery.toLowerCase();
+    const results: AnbiOrganisation[] = [];
+    const limit = 100;
+
+    for (let i = 0; i < anbiOrganisations.length; i++) {
+      const anbi = anbiOrganisations[i];
+      const name = anbi.naam;
+      const rsin = anbi.fiscaalNummer;
+
+      const matchesName = name && name.toLowerCase().includes(query);
+      const matchesRSIN = rsin && String(rsin).includes(query);
+
+      if (matchesName || matchesRSIN) {
+        results.push(anbi);
+        if (results.length >= limit) break;
+      }
+    }
+
+    return results;
+  }, [anbiOrganisations, deferredQuery]);
+
+  const handleClose = () => {
+    setSearchQuery('');
+    onClose();
+  };
+
+  const handleSelect = (anbi: AnbiOrganisation) => {
+    setSearchQuery('');
+    onSelect(anbi);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 id="modal-title" className="font-semibold text-lg">
+                {t('associate_anbi')}
+              </h2>
+              <button
+                onClick={handleClose}
+                className="p-1 rounded-full hover:bg-slate-100"
+                aria-label={t('close')}
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('search_anbi_placeholder')}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                  aria-label={t('search_anbi_placeholder')}
+                />
+              </div>
+              <div
+                className="min-h-[400px] max-h-96 overflow-y-auto space-y-2 flex flex-col"
+                role="listbox"
+              >
+                {searchQuery.length < 2 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 px-4">
+                    <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                      <Search className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-slate-500 font-medium">
+                      {t('search_anbi_initial')}
+                    </p>
+                    <p className="text-slate-400 text-sm">
+                      {t('search_anbi_min_chars')}
+                    </p>
+                  </div>
+                ) : filteredOrganisations.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 px-4">
+                    <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                      <AlertCircle className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-slate-500 font-medium">
+                      {t('no_orgs_found')}
+                    </p>
+                    <p className="text-slate-400 text-sm">
+                      {t('try_different_term')}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredOrganisations.map((anbi) => (
+                      <div
+                        key={anbi.dossierNummer}
+                        onClick={() => handleSelect(anbi)}
+                        className="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
+                        role="option"
+                      >
+                        <p className="font-semibold text-slate-800 line-clamp-1">
+                          {anbi.naam}
+                        </p>
+                        <p className="text-xs text-slate-600 font-medium mb-1">
+                          RSIN: {anbi.fiscaalNummer ?? '-'}
+                        </p>
+                        <p className="text-sm text-slate-500 line-clamp-1">
+                          {anbi.vestigingsPlaats}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
