@@ -10,12 +10,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const deployUrl = new URL(process.env.DEPLOY_URL);
   const baseUrl = deployUrl.origin;
+  const rollbarToken = env.VITE_ROLLBAR_ACCESS_TOKEN || process.env.VITE_ROLLBAR_ACCESS_TOKEN;
   return {
     plugins: [
       react(),
       tailwindcss(),
       viteRollbar({
-        accessToken: rollbarConfig.accessToken,
+        accessToken: rollbarToken,
         version: rollbarConfig.version,
         baseUrl: baseUrl,
       }),
