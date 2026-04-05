@@ -1,26 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDropzone } from 'react-dropzone';
-import Papa from 'papaparse';
 import { AnimatePresence } from 'motion/react';
-import { analyzeTransactions } from './services/gemini';
-import {
-  AnbiOrganisation,
-  getAnbiData,
-  getLastAnbiRefreshTime,
-  AnbiMetadata,
-} from './services/anbi';
-import { AnbiModal } from './components/AnbiModal';
-import {
-  AnalysisMode,
-  Party,
-  type DonationResult,
-  type Transaction,
-} from './lib/types';
-import {
-  groupTransactionsByCounterparty,
-  type GroupedDonation,
-} from './lib/analysis';
 
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -29,194 +9,63 @@ import { InfoCard } from './components/InfoCard';
 import { AnbiDatabaseStatus } from './components/AnbiDatabaseStatus';
 import { FutureIntegrationCard } from './components/FutureIntegrationCard';
 import { ResultsDisplay } from './components/ResultsDisplay';
+import { AnbiModal } from './components/AnbiModal';
+
+import { useAnbiData } from './hooks/useAnbiData';
+import { useDonationAnalysis } from './hooks/useDonationAnalysis';
+import { useCsvUpload } from './hooks/useCsvUpload';
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [results, setResults] = useState<DonationResult[]>([]);
-  const [groupedResults, setGroupedResults] = useState<GroupedDonation[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [fiscalYear, setFiscalYear] = useState(
-    new Date().getFullYear().toString(),
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [mode] = useState<AnalysisMode>('manual');
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
-    {},
-  );
-  const [isRefreshingAnbi, setIsRefreshingAnbi] = useState(false);
-  const [isAnbiModalOpen, setIsAnbiModalOpen] = useState(false);
-  const [anbiOrganisations, setAnbiOrganisations] = useState<
-    AnbiOrganisation[]
-  >([]);
-  const [anbiMetadata, setAnbiMetadata] = useState<AnbiMetadata | null>(null);
-  const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
-  const [currentTime, setCurrentTime] = useState(Date.now());
-  const [selectedGroup, setSelectedGroup] = useState<GroupedDonation | null>(
-    null,
-  );
+
+  const {
+    anbiOrganisations,
+    anbiMetadata,
+    lastRefreshTime,
+    currentTime,
+    isRefreshingAnbi,
+    handleRefreshAnbi,
+  } = useAnbiData();
+
+  const {
+    transactions,
+    setTransactions,
+    results,
+    setResults,
+    groupedResults,
+    setGroupedResults,
+    isAnalyzing,
+    fiscalYear,
+    setFiscalYear,
+    error,
+    setError,
+    mode,
+    expandedGroups,
+    isAnbiModalOpen,
+    setIsAnbiModalOpen,
+    handleAnalyze,
+    handleAssociateAnbi,
+    handleDissociateAnbi,
+    handleAnbiSelection,
+    toggleGroup,
+    totalDonations,
+  } = useDonationAnalysis();
+
+  const { getRootProps, getInputProps, isDragActive } = useCsvUpload({
+    onSuccess: (mapped) => {
+      setTransactions(mapped);
+      setResults([]);
+      setGroupedResults([]);
+      setError(null);
+    },
+    onError: (err) => {
+      setError(err);
+    },
+  });
 
   useEffect(() => {
     document.title = t('title');
-    getAnbiData().then((data) => {
-      setAnbiOrganisations(data?.beschikking ?? []);
-      setAnbiMetadata(data?.header ?? null);
-    });
-    getLastAnbiRefreshTime().then(setLastRefreshTime);
   }, [t]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    setError(null);
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const mapped: Transaction[] = results.data
-          .map((row: any) => {
-            const date = row.Datum || row.Date || row['Boekdatum'] || '';
-            const amountStr =
-              row.Bedrag || row.Amount || row['Bedrag (EUR)'] || '0';
-            const description =
-              row.Naam ||
-              row.Omschrijving ||
-              row.Description ||
-              row['Description-1'] ||
-              row['Mededelingen'] ||
-              '';
-            const counterparty: Party = {
-              name: row['Name Counterpty'] || '',
-              iban:
-              row['Tegenrekening'] ||
-              row['Counterparty'] ||
-              row['Counterpty IBAN/BBAN'] ||
-              '',
-            };
-            const amount = parseFloat(amountStr.toString().replace(',', '.'));
-            return { date, description, amount, counterparty };
-          })
-          .filter((t) => t.date && t.amount);
-
-        if (mapped.length === 0) {
-          setError(t('csv_error_valid'));
-        } else {
-          setTransactions(mapped);
-          setResults([]);
-          setGroupedResults([]);
-        }
-      },
-      error: () => {
-        setError(t('csv_error_parse'));
-      },
-    });
-  }, [t]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'text/csv': ['.csv'] },
-    multiple: false,
-  } as any);
-
-  const handleAnalyze = async () => {
-    if (transactions.length === 0) return;
-    setIsAnalyzing(true);
-    setError(null);
-    try {
-      if (mode === 'ai') {
-        const donationResults = await analyzeTransactions(
-          transactions,
-          fiscalYear,
-        );
-        setResults(donationResults);
-        setGroupedResults([]);
-      } else {
-        const grouped = await groupTransactionsByCounterparty(
-          transactions,
-          fiscalYear,
-        );
-        setGroupedResults(grouped);
-        setResults([]);
-      }
-    } catch (err) {
-      setError(t('analysis_failed'));
-      console.error(err);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleRefreshAnbi = async () => {
-    setIsRefreshingAnbi(true);
-    try {
-      const data = await getAnbiData(true);
-      setAnbiOrganisations(data?.beschikking ?? []);
-      setAnbiMetadata(data?.header ?? null);
-      setLastRefreshTime(Date.now());
-    } catch (error) {
-      console.error('Failed to refresh ANBI data:', error);
-      setError(t('anbi_refresh_failed'));
-    } finally {
-      setIsRefreshingAnbi(false);
-    }
-  };
-
-  const handleAssociateAnbi = (group: GroupedDonation) => {
-    setSelectedGroup(group);
-    setIsAnbiModalOpen(true);
-  };
-
-  const handleDissociateAnbi = (groupId: string) => {
-    const updatedGroupedResults = groupedResults.map((g) =>
-      g.id === groupId
-        ? {
-            ...g,
-            counterparty: {
-              ...g.counterparty,
-              rsin: undefined,
-              anbiName: undefined,
-            },
-          }
-        : g,
-    );
-    setGroupedResults(updatedGroupedResults);
-  };
-
-  const handleAnbiSelection = (anbi: AnbiOrganisation) => {
-    if (!selectedGroup) return;
-
-    const updatedGroupedResults = groupedResults.map((g) =>
-      g.id === selectedGroup.id
-        ? {
-            ...g,
-            counterparty: {
-              ...g.counterparty,
-              rsin: anbi.fiscaalNummer,
-              anbiName: anbi.naam,
-            },
-          }
-        : g,
-    );
-
-    setGroupedResults(updatedGroupedResults);
-    setIsAnbiModalOpen(false);
-    setSelectedGroup(null);
-  };
-
-  const toggleGroup = (id: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const totalDonations =
-    mode === 'ai'
-      ? results.reduce((sum, r) => sum + r.amount, 0)
-      : groupedResults.reduce((sum, r) => sum + r.totalAmount, 0);
 
   const toggleLanguage = () => {
     const nextLng = i18n.language === 'nl' ? 'en' : 'nl';
