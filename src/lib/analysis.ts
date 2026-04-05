@@ -39,6 +39,15 @@ function findAnbiForCounterparty(
   return match;
 }
 
+const VIA_PAYMENT_PROXIES = [
+  'bunq',
+  'ING Zakelijk Betaalverzoek',
+  'Rabo Zakelijk Betaalverzoek',
+  'Stripe Technology Europe Ltd',
+];
+
+const SUMUP_PROXY = 'Sumup *';
+
 /**
  * Extracts the intended recipient from the transaction if a payment proxy is used.
  * @param transaction The transaction to parse.
@@ -49,14 +58,10 @@ function getRealRecipientName(transaction: Transaction): string {
   const counterpartyName = counterparty.name.toLowerCase();
 
   // If the counterparty name includes a payment proxy, the description may hold the real recipient.
-  const viaBunq = ' via bunq';
-  const viaIng = ' via ING Zakelijk Betaalverzoek';
-  const sumup = 'Sumup *';
-
+  const via = ' via ';
   if (
-    counterpartyName.includes(viaBunq) ||
-    counterpartyName.includes(viaIng) ||
-    counterpartyName.includes(sumup)
+    counterpartyName.includes(via) ||
+    counterpartyName.includes(SUMUP_PROXY)
   ) {
     // A simple heuristic: the real recipient is often at the start of the description.
     // This is a guess and might need to be more sophisticated.

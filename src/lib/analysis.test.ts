@@ -184,14 +184,21 @@ describe('groupTransactionsByCounterparty', () => {
         date: '2025-01-01',
         description: 'Real Charity Name',
         amount: 10,
-        counterparty: { name: 'Payment via bunq', iban: 'NL4' },
+        counterparty: { name: 'Payment via some bank', iban: 'NL4' },
+      },
+      {
+        date: '2025-02-01',
+        description: 'Donation 2',
+        amount: 5,
+        counterparty: { name: 'Olivia', iban: 'NL5' },
       },
     ];
 
     const result = await groupTransactionsByCounterparty(transactions, '2025');
 
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(2);
     expect(result[0].counterparty.name).toBe('Real Charity Name');
+    expect(result[1].counterparty.name).toBe('Olivia');
   });
 
   it('should apply manual corrections', async () => {
