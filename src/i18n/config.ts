@@ -35,6 +35,8 @@ i18next.use(initReactI18next).init({
         hide_transactions: 'Hide Transactions',
         anbi_source:
           'The ANBI database is sourced from overheid.nl and is cached for offline use.',
+        anbi_version: 'Database version: {{version}} ({{date}})',
+        refresh_cooldown: 'Try again in {{minutes}}m {{seconds}}s',
       },
     },
     nl: {
@@ -69,6 +71,8 @@ i18next.use(initReactI18next).init({
         hide_transactions: 'Verberg Transacties',
         anbi_source:
           'De ANBI-database is afkomstig van overheid.nl en wordt in de cache opgeslagen voor offline gebruik.',
+        anbi_version: 'Database versie: {{version}} ({{date}})',
+        refresh_cooldown: 'Probeer het over {{minutes}}m {{seconds}}s weer',
       },
     },
   },

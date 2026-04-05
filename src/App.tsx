@@ -23,7 +23,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { analyzeTransactions } from './services/gemini';
-import { AnbiOrganisation, getAnbiData } from './services/anbi';
+import {
+  AnbiMetadata,
+  AnbiOrganisation,
+  getAnbiData,
+  getLastAnbiRefreshTime,
+} from './services/anbi';
 import { AnbiModal } from './components/AnbiModal';
 import { Party, type DonationResult, type Transaction } from './lib/types';
 import {
@@ -52,14 +57,26 @@ export default function App() {
   const [anbiOrganisations, setAnbiOrganisations] = useState<
     AnbiOrganisation[]
   >([]);
+  const [anbiMetadata, setAnbiMetadata] = useState<AnbiMetadata | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const [selectedGroup, setSelectedGroup] = useState<GroupedDonation | null>(
     null,
   );
 
   useEffect(() => {
     document.title = t('title');
-    getAnbiData().then((data) => setAnbiOrganisations(data?.beschikking ?? []));
+    getAnbiData().then((data) => {
+      setAnbiOrganisations(data?.beschikking ?? []);
+      setAnbiMetadata(data?.header ?? null);
+    });
+    getLastAnbiRefreshTime().then(setLastRefreshTime);
   }, [t]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -150,6 +167,8 @@ export default function App() {
     try {
       const data = await getAnbiData(true);
       setAnbiOrganisations(data?.beschikking ?? []);
+      setAnbiMetadata(data?.header ?? null);
+      setLastRefreshTime(Date.now());
     } catch (error) {
       console.error('Failed to refresh ANBI data:', error);
       setError('Failed to refresh ANBI data.');
@@ -392,20 +411,51 @@ export default function App() {
                   <p className="text-sm font-medium text-slate-800">
                     ANBI Database
                   </p>
-                  <p className="text-xs text-slate-500">{t('anbi_source')}</p>
+                  <p className="text-xs text-slate-500">
+                    {anbiMetadata
+                      ? t('anbi_version', {
+                          version: anbiMetadata.versie,
+                          date: new Date(
+                            anbiMetadata.aanmaakDatum,
+                          ).toLocaleDateString(i18n.language, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          }),
+                        })
+                      : t('anbi_source')}
+                  </p>
                 </div>
               </div>
-              <button
-                onClick={handleRefreshAnbi}
-                disabled={isRefreshingAnbi}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isRefreshingAnbi ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  'Refresh'
-                )}
-              </button>
+              {(() => {
+                const COOLDOWN_MS = 15 * 60 * 1000;
+                const remaining = lastRefreshTime
+                  ? lastRefreshTime + COOLDOWN_MS - currentTime
+                  : 0;
+                const isOnCooldown = remaining > 0;
+
+                return (
+                  <button
+                    onClick={handleRefreshAnbi}
+                    disabled={isRefreshingAnbi || isOnCooldown}
+                    className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-right"
+                  >
+                    {isRefreshingAnbi ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Refreshing...</span>
+                      </div>
+                    ) : isOnCooldown ? (
+                      t('refresh_cooldown', {
+                        minutes: Math.floor(remaining / 60000),
+                        seconds: Math.floor((remaining % 60000) / 1000),
+                      })
+                    ) : (
+                      'Refresh'
+                    )}
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Future Integration Card */}

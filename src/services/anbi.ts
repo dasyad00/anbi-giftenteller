@@ -47,9 +47,14 @@ async function setToDB(key: string, value: any) {
 
 // --- Data Fetching Logic ---
 
+export interface AnbiMetadata {
+  aanmaakDatum: string;
+  versie: number;
+}
+
 export interface AnbiOrganisationDataset {
   beschikking: AnbiOrganisation[];
-  header: { aanmaakDatum: string; versie: number };
+  header: AnbiMetadata;
 }
 
 export interface AnbiOrganisation {
@@ -88,22 +93,42 @@ const fetchData = async (): Promise<AnbiOrganisationDataset> => {
   return data.publicatieAnbiInstellingen;
 };
 
+export const getLastAnbiRefreshTime = async (): Promise<number | null> => {
+  try {
+    return (await getFromDB(CACHE_TIMESTAMP_KEY)) as number | null;
+  } catch {
+    return null;
+  }
+};
+
 export const getAnbiData = async (
   forceRefresh: boolean = false,
 ): Promise<AnbiOrganisationDataset> => {
   const now = new Date().getTime();
+  const fifteenMinutes = 15 * 60 * 1000;
 
   // Try to use IndexedDB first
   try {
     const cachedTimestamp = (await getFromDB(CACHE_TIMESTAMP_KEY)) as number;
+    const isRecentlyRefreshed =
+      cachedTimestamp && now - cachedTimestamp < fifteenMinutes;
+
+    // Even if forceRefresh is true, we skip if it's too soon to avoid rate limiting
     if (
-      !forceRefresh &&
-      cachedTimestamp &&
-      now - cachedTimestamp < 24 * 60 * 60 * 1000 // 24-hour cache
+      (!forceRefresh &&
+        cachedTimestamp &&
+        now - cachedTimestamp < 24 * 60 * 60 * 1000) || // 24-hour cache
+      (forceRefresh && isRecentlyRefreshed)
     ) {
       const cachedData = await getFromDB(CACHE_KEY);
       if (cachedData) {
-        console.log('Returning cached ANBI data from IndexedDB');
+        if (forceRefresh && isRecentlyRefreshed) {
+          console.log(
+            'Skipping refresh: ANBI data was updated less than 15 minutes ago.',
+          );
+        } else {
+          console.log('Returning cached ANBI data from IndexedDB');
+        }
         return cachedData;
       }
     }
