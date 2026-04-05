@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
+import { reportError } from '../lib/rollbar';
 
 const ANBI_URL = 'https://download.belastingdienst.nl/data/anbi/anbi.zip';
 const CACHE_KEY = 'anbi-data';
@@ -96,7 +97,10 @@ const fetchData = async (): Promise<AnbiOrganisationDataset> => {
 export const getLastAnbiRefreshTime = async (): Promise<number | null> => {
   try {
     return (await getFromDB(CACHE_TIMESTAMP_KEY)) as number | null;
-  } catch {
+  } catch (error) {
+    // We don't necessarily want to alert Rollbar for a silent cache miss on init,
+    // but console logging it is fine.
+    console.debug('No previous refresh time found in IndexedDB');
     return null;
   }
 };
@@ -113,11 +117,10 @@ export const getAnbiData = async (
     const isRecentlyRefreshed =
       cachedTimestamp && now - cachedTimestamp < fifteenMinutes;
 
-    // Even if forceRefresh is true, we skip if it's too soon to avoid rate limiting
     if (
       (!forceRefresh &&
         cachedTimestamp &&
-        now - cachedTimestamp < 24 * 60 * 60 * 1000) || // 24-hour cache
+        now - cachedTimestamp < 24 * 60 * 60 * 1000) ||
       (forceRefresh && isRecentlyRefreshed)
     ) {
       const cachedData = await getFromDB(CACHE_KEY);
@@ -133,10 +136,12 @@ export const getAnbiData = async (
       }
     }
   } catch (error) {
-    console.warn(
-      'Could not read from IndexedDB. This might be because it is not supported (e.g., in private browsing mode). Falling back to no cache.',
-      error,
-    );
+    // This is a warning because it's usually just due to private mode,
+    // but we report it to Rollbar to see how often it happens.
+    reportError(error, {
+      message: 'IndexedDB read failed, falling back to network',
+      level: 'warning',
+    });
   }
 
   // If cache is invalid, not present, or DB fails, fetch fresh data
@@ -149,8 +154,7 @@ export const getAnbiData = async (
     await setToDB(CACHE_TIMESTAMP_KEY, now);
     console.log('Cached fresh ANBI data in IndexedDB');
   } catch (error) {
-    console.error('Failed to cache ANBI data in IndexedDB:', error);
-    // The app will still work with the in-memory data
+    reportError(error, 'Failed to cache ANBI data in IndexedDB');
   }
 
   return data;

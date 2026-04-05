@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { DonationResult, Transaction } from '../lib/types';
+import { reportError } from '../lib/rollbar';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
@@ -55,7 +56,7 @@ export async function analyzeTransactions(
     const results = JSON.parse(response.text || '[]');
     return results.filter((r: DonationResult) => r.isAnbi);
   } catch (e) {
-    console.error('Failed to parse Gemini response', e);
+    reportError(e, 'Failed to parse Gemini response');
     return [];
   }
 }
