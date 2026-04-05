@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { groupTransactionsByCounterparty } from './analysis';
 import { Party, Transaction } from './types';
 import { applyManualCorrections } from './manualCorrection';
@@ -10,7 +10,7 @@ vi.mock('../services/anbi', () => ({
 
 import { AnbiOrganisationDataset, getAnbiData } from '../services/anbi';
 
-const mockedGetAnbiData = getAnbiData as vi.Mock;
+const mockedGetAnbiData = getAnbiData as Mock;
 
 describe('groupTransactionsByCounterparty', () => {
   const charityA: Party = {
