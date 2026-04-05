@@ -78,12 +78,12 @@ export function AnbiModal({
                 />
               </div>
               <div
-                className="max-h-96 overflow-y-auto space-y-2"
+                className="min-h-[400px] max-h-96 overflow-y-auto space-y-2 flex flex-col"
                 role="listbox"
               >
                 {searchQuery.length < 2 ? (
-                  <div className="text-center py-12 px-4">
-                    <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 px-4">
+                    <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mb-3">
                       <Search className="w-6 h-6 text-slate-400" />
                     </div>
                     <p className="text-slate-500 font-medium">
@@ -94,8 +94,8 @@ export function AnbiModal({
                     </p>
                   </div>
                 ) : filteredOrganisations.length === 0 ? (
-                  <div className="text-center py-12 px-4">
-                    <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 px-4">
+                    <div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mb-3">
                       <AlertCircle className="w-6 h-6 text-slate-400" />
                     </div>
                     <p className="text-slate-500 font-medium">
@@ -106,24 +106,26 @@ export function AnbiModal({
                     </p>
                   </div>
                 ) : (
-                  filteredOrganisations.map((anbi) => (
-                    <div
-                      key={anbi.dossierNummer}
-                      onClick={() => handleSelect(anbi)}
-                      className="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
-                      role="option"
-                    >
-                      <p className="font-semibold text-slate-800 line-clamp-1">
-                        {anbi.naam}
-                      </p>
-                      <p className="text-xs text-slate-600 font-medium mb-1">
-                        RSIN: {anbi.fiscaalNummer ?? '-'}
-                      </p>
-                      <p className="text-sm text-slate-500 line-clamp-1">
-                        {anbi.vestigingsPlaats}
-                      </p>
-                    </div>
-                  ))
+                  <div className="space-y-2">
+                    {filteredOrganisations.map((anbi) => (
+                      <div
+                        key={anbi.dossierNummer}
+                        onClick={() => handleSelect(anbi)}
+                        className="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
+                        role="option"
+                      >
+                        <p className="font-semibold text-slate-800 line-clamp-1">
+                          {anbi.naam}
+                        </p>
+                        <p className="text-xs text-slate-600 font-medium mb-1">
+                          RSIN: {anbi.fiscaalNummer ?? '-'}
+                        </p>
+                        <p className="text-sm text-slate-500 line-clamp-1">
+                          {anbi.vestigingsPlaats}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
