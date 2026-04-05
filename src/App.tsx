@@ -102,10 +102,10 @@ export default function App() {
             const counterparty: Party = {
               name: row['Name Counterpty'] || '',
               iban:
-                row['Tegenrekening'] ||
-                row['Counterparty'] ||
-                row['Counterpty IBAN/BBAN'] ||
-                '',
+              row['Tegenrekening'] ||
+              row['Counterparty'] ||
+              row['Counterpty IBAN/BBAN'] ||
+              '',
             };
             const amount = parseFloat(amountStr.toString().replace(',', '.'));
             return { date, description, amount, counterparty };
@@ -113,9 +113,7 @@ export default function App() {
           .filter((t) => t.date && t.amount);
 
         if (mapped.length === 0) {
-          setError(
-            'Could not find valid transactions in the CSV. Please check the format.',
-          );
+          setError(t('csv_error_valid'));
         } else {
           setTransactions(mapped);
           setResults([]);
@@ -123,10 +121,10 @@ export default function App() {
         }
       },
       error: () => {
-        setError('Error parsing CSV file.');
+        setError(t('csv_error_parse'));
       },
     });
-  }, []);
+  }, [t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -155,7 +153,7 @@ export default function App() {
         setResults([]);
       }
     } catch (err) {
-      setError('Analysis failed. Please try again.');
+      setError(t('analysis_failed'));
       console.error(err);
     } finally {
       setIsAnalyzing(false);
@@ -171,7 +169,7 @@ export default function App() {
       setLastRefreshTime(Date.now());
     } catch (error) {
       console.error('Failed to refresh ANBI data:', error);
-      setError('Failed to refresh ANBI data.');
+      setError(t('anbi_refresh_failed'));
     } finally {
       setIsRefreshingAnbi(false);
     }
@@ -346,11 +344,13 @@ export default function App() {
                   <div>
                     <p className="font-medium text-slate-800">
                       {transactions.length > 0
-                        ? `${transactions.length} transactions loaded`
+                        ? t('transactions_loaded', {
+                            count: transactions.length,
+                          })
                         : t('upload_desc')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      CSV format from ING, ABN, Rabo, etc.
+                      {t('csv_banks_info')}
                     </p>
                   </div>
                 </div>
@@ -393,7 +393,7 @@ export default function App() {
                 <Info className="w-5 h-5 text-indigo-600 shrink-0" />
                 <div className="space-y-2">
                   <h3 className="font-semibold text-indigo-900 text-sm">
-                    ANBI?
+                    {t('anbi_question')}
                   </h3>
                   <p className="text-sm text-indigo-800/80 leading-relaxed">
                     {t('anbi_explanation')}
@@ -443,7 +443,7 @@ export default function App() {
                     {isRefreshingAnbi ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Refreshing...</span>
+                        <span>{t('refreshing')}</span>
                       </div>
                     ) : isOnCooldown ? (
                       t('refresh_cooldown', {
@@ -451,7 +451,7 @@ export default function App() {
                         seconds: Math.floor((remaining % 60000) / 1000),
                       })
                     ) : (
-                      'Refresh'
+                      t('refresh_btn')
                     )}
                   </button>
                 );
@@ -468,9 +468,7 @@ export default function App() {
                   <p className="text-sm font-medium text-slate-800">
                     {t('future_banking')}
                   </p>
-                  <p className="text-xs text-slate-500">
-                    Open Banking (PSD2) API
-                  </p>
+                  <p className="text-xs text-slate-500">{t('psd2_api')}</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
@@ -507,7 +505,7 @@ export default function App() {
                         <div className="flex gap-2">
                           <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5">
                             <Download className="w-4 h-4" />
-                            Export PDF
+                            {t('export_pdf')}
                           </button>
                         </div>
                       </div>
@@ -561,7 +559,9 @@ export default function App() {
                                     {group.counterparty.iban}
                                   </p>
                                   <p className="text-xs text-slate-500">
-                                    {group.transactions.length} transactions
+                                    {t('transaction_count', {
+                                      count: group.transactions.length,
+                                    })}
                                   </p>
                                   {group.counterparty.rsin && (
                                     <p className="text-xs text-emerald-600 font-medium">
@@ -617,8 +617,8 @@ export default function App() {
                                           className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
                                         >
                                           {group.counterparty.rsin
-                                            ? 'Change'
-                                            : 'Associate with an ANBI'}
+                                            ? t('change')
+                                            : t('associate_anbi')}
                                         </button>
                                         {group.counterparty.rsin && (
                                           <>
@@ -629,7 +629,7 @@ export default function App() {
                                               }
                                               className="text-sm font-medium text-red-600 hover:text-red-700"
                                             >
-                                              Dissociate
+                                              {t('dissociate')}
                                             </button>
                                           </>
                                         )}
@@ -663,8 +663,7 @@ export default function App() {
                   <div>
                     <h3 className="font-bold text-lg">{t('analyze')}</h3>
                     <p className="text-slate-500 max-w-xs mx-auto">
-                      Click the analyze button to process your statement using{' '}
-                      {mode === 'ai' ? 'AI' : 'manual grouping'}.
+                      {t('upload_prompt')}
                     </p>
                   </div>
                 </motion.div>
@@ -674,10 +673,11 @@ export default function App() {
                     <TrendingUp className="text-slate-300 w-12 h-12" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-bold text-xl">Ready to calculate</h3>
+                    <h3 className="font-bold text-xl">
+                      {t('ready_to_calculate')}
+                    </h3>
                     <p className="text-slate-500 max-w-xs">
-                      Upload your bank statement to start tracking your
-                      donations.
+                      {t('upload_prompt')}
                     </p>
                   </div>
                 </div>
@@ -696,16 +696,16 @@ export default function App() {
 
       <footer className="max-w-5xl mx-auto px-4 py-8 border-t border-slate-200 mt-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
-          <p>© 2026 ANBI Donation Tracker. Built with Google AI Studio.</p>
+          <p>© 2026 ANBI Donation Tracker. {t('built_with')}</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-slate-600">
-              Privacy
+              {t('privacy')}
             </a>
             <a href="#" className="hover:text-slate-600">
-              Terms
+              {t('terms')}
             </a>
             <a href="#" className="hover:text-slate-600">
-              Security
+              {t('security')}
             </a>
           </div>
         </div>

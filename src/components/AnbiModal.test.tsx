@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AnbiModal } from './AnbiModal';
 import { AnbiOrganisation } from '../services/anbi';
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en' },
+  }),
+}));
+
 // Mock motion/react to avoid animation-related issues in tests
 vi.mock('motion/react', () => ({
   motion: {
@@ -56,10 +64,8 @@ describe('AnbiModal', () => {
       />,
     );
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Search for an ANBI')).toBeInTheDocument();
-    expect(
-      screen.getByText('Type at least 2 characters to see results'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('search_anbi_initial')).toBeInTheDocument();
+    expect(screen.getByText('search_anbi_min_chars')).toBeInTheDocument();
   });
 
   it('filters organisations by name', () => {
@@ -72,7 +78,7 @@ describe('AnbiModal', () => {
       />,
     );
 
-    const input = screen.getByPlaceholderText('Search for an ANBI...');
+    const input = screen.getByLabelText('search_anbi_placeholder');
     fireEvent.change(input, { target: { value: 'Charity' } });
 
     expect(screen.getByText('Stichting Charity A')).toBeInTheDocument();
@@ -89,7 +95,7 @@ describe('AnbiModal', () => {
       />,
     );
 
-    const input = screen.getByPlaceholderText('Search for an ANBI...');
+    const input = screen.getByLabelText('search_anbi_placeholder');
     fireEvent.change(input, { target: { value: '987654321' } });
 
     expect(screen.getByText('Helping Hands')).toBeInTheDocument();
@@ -106,10 +112,10 @@ describe('AnbiModal', () => {
       />,
     );
 
-    const input = screen.getByPlaceholderText('Search for an ANBI...');
+    const input = screen.getByLabelText('search_anbi_placeholder');
     fireEvent.change(input, { target: { value: 'NonExistent' } });
 
-    expect(screen.getByText('No organizations found')).toBeInTheDocument();
+    expect(screen.getByText('no_orgs_found')).toBeInTheDocument();
   });
 
   it('calls onSelect when an organisation is clicked', () => {
@@ -122,7 +128,7 @@ describe('AnbiModal', () => {
       />,
     );
 
-    const input = screen.getByPlaceholderText('Search for an ANBI...');
+    const input = screen.getByLabelText('search_anbi_placeholder');
     fireEvent.change(input, { target: { value: 'Charity' } });
 
     const option = screen.getByText('Stichting Charity A');
@@ -141,7 +147,7 @@ describe('AnbiModal', () => {
       />,
     );
 
-    const closeButton = screen.getByLabelText('Close');
+    const closeButton = screen.getByLabelText('close');
     fireEvent.click(closeButton);
 
     expect(onClose).toHaveBeenCalled();

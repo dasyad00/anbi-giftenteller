@@ -1,4 +1,5 @@
 import { useMemo, useState, useDeferredValue } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, X, AlertCircle } from 'lucide-react';
 import { AnbiOrganisation } from '../services/anbi';
@@ -16,6 +17,7 @@ export function AnbiModal({
   onSelect,
   anbiOrganisations,
 }: AnbiModalProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const deferredQuery = useDeferredValue(searchQuery);
 
@@ -68,12 +70,12 @@ export function AnbiModal({
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <h2 id="modal-title" className="font-semibold text-lg">
-                Associate with ANBI
+                {t('associate_anbi')}
               </h2>
               <button
                 onClick={handleClose}
                 className="p-1 rounded-full hover:bg-slate-100"
-                aria-label="Close"
+                aria-label={t('close')}
               >
                 <X className="w-5 h-5 text-slate-500" />
               </button>
@@ -85,9 +87,9 @@ export function AnbiModal({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search for an ANBI..."
+                  placeholder={t('search_anbi_placeholder')}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                  aria-label="Search for an ANBI"
+                  aria-label={t('search_anbi_placeholder')}
                 />
               </div>
               <div
@@ -100,10 +102,10 @@ export function AnbiModal({
                       <Search className="w-6 h-6 text-slate-400" />
                     </div>
                     <p className="text-slate-500 font-medium">
-                      Search for an ANBI
+                      {t('search_anbi_initial')}
                     </p>
                     <p className="text-slate-400 text-sm">
-                      Type at least 2 characters to see results
+                      {t('search_anbi_min_chars')}
                     </p>
                   </div>
                 ) : filteredOrganisations.length === 0 ? (
@@ -112,10 +114,10 @@ export function AnbiModal({
                       <AlertCircle className="w-6 h-6 text-slate-400" />
                     </div>
                     <p className="text-slate-500 font-medium">
-                      No organizations found
+                      {t('no_orgs_found')}
                     </p>
                     <p className="text-slate-400 text-sm">
-                      Try a different search term
+                      {t('try_different_term')}
                     </p>
                   </div>
                 ) : (
