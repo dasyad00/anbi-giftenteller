@@ -1,3 +1,5 @@
+export type AnalysisMode = 'ai' | 'manual';
+
 export interface Party {
   name: string;
   iban: string;
