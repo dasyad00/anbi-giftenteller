@@ -92,6 +92,7 @@ export function useDonationAnalysis() {
         : g,
     );
     setAllGroupedResults(updated);
+    toggleGroup(groupId);
   };
 
   const handleAnbiSelection = (anbi: AnbiOrganisation) => {
