@@ -53,6 +53,9 @@ i18next.use(initReactI18next).init({
         associate_anbi: 'Associate with ANBI',
         change: 'Change',
         dissociate: 'Dissociate',
+        associated_groups_count: '{{count}} associated groups',
+        show_non_anbi: 'Show {{count}} non-ANBI groups',
+        hide_non_anbi: 'Hide non-ANBI groups',
         ready_to_calculate: 'Ready to calculate',
         upload_prompt:
           'Upload your bank statement to start tracking your donations.',
@@ -118,6 +121,9 @@ i18next.use(initReactI18next).init({
         associate_anbi: 'Koppel aan ANBI',
         change: 'Wijzigen',
         dissociate: 'Ontkoppelen',
+        associated_groups_count: '{{count}} gekoppelde groepen',
+        show_non_anbi: 'Toon {{count}} niet-ANBI groepen',
+        hide_non_anbi: 'Verberg niet-ANBI groepen',
         ready_to_calculate: 'Klaar om te berekenen',
         upload_prompt:
           'Upload je bankafschrift om je giften te gaan bijhouden.',

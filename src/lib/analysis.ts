@@ -1,7 +1,7 @@
 import { AnbiOrganisation, getAnbiData } from '../services/anbi';
 import { Party, Transaction } from './types';
 
-export interface GroupedDonation {
+export interface TransactionGroup {
   id: string;
   counterparty: Party;
   totalAmount: number;
@@ -81,7 +81,7 @@ function getRealRecipientName(transaction: Transaction): string {
 export async function groupTransactionsByCounterparty(
   transactions: Transaction[],
   year: string,
-): Promise<GroupedDonation[]> {
+): Promise<TransactionGroup[]> {
   const anbiData = await getAnbiData().catch((e) => {
     console.error(e);
     return null;
@@ -94,7 +94,7 @@ export async function groupTransactionsByCounterparty(
     return t.date.includes(year);
   });
 
-  const groups: Record<string, GroupedDonation> = {};
+  const groups: Record<string, TransactionGroup> = {};
 
   for (const t of filtered) {
     const realRecipientName = getRealRecipientName(t);

@@ -1,4 +1,4 @@
-import { GroupedDonation } from './analysis';
+import { TransactionGroup } from './analysis';
 
 export interface ManualCorrection {
   originalGroupId: string;
@@ -6,24 +6,23 @@ export interface ManualCorrection {
 }
 
 export function applyManualCorrections(
-  donations: GroupedDonation[],
+  groups: TransactionGroup[],
   corrections: ManualCorrection[],
-): GroupedDonation[] {
-  const correctedDonations = donations.map((d) => ({ ...d }));
+): TransactionGroup[] {
+  const correctedGroups = groups.map((d) => ({ ...d }));
 
   for (const correction of corrections) {
-    const donationToCorrect = correctedDonations.find(
+    const groupToCorrect = correctedGroups.find(
       (d) =>
         `${d.counterparty.name}#${d.counterparty.iban}` ===
         correction.originalGroupId,
     );
 
-    if (donationToCorrect) {
-      donationToCorrect.counterparty.name =
-        correction.correctedCounterpartyName;
-      donationToCorrect.manuallyEdited = true;
+    if (groupToCorrect) {
+      groupToCorrect.counterparty.name = correction.correctedCounterpartyName;
+      groupToCorrect.manuallyEdited = true;
     }
   }
 
-  return correctedDonations;
+  return correctedGroups;
 }
