@@ -1,5 +1,6 @@
 import { Globe, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { SiGithub } from '@icons-pack/react-simple-icons';
 
 interface HeaderProps {
   onToggleLanguage: () => void;
@@ -28,6 +29,15 @@ export function Header({ onToggleLanguage }: HeaderProps) {
             <Globe className="w-4 h-4" />
             {i18n.language === 'nl' ? t('dutch') : t('english')}
           </button>
+          <a
+            href="https://github.com/dasyad00/anbi-giftenteller"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 text-slate-500 hover:text-slate-800 transition-colors"
+            aria-label="GitHub Repository"
+          >
+            <SiGithub className="w-5 h-5" />
+          </a>
         </div>
       </div>
     </header>

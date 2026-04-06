@@ -17,6 +17,14 @@ export function Footer() {
           <a href="#" className="hover:text-slate-600">
             {t('security')}
           </a>
+          <a
+            href="https://github.com/dasyad00/anbi-giftenteller"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-slate-600"
+          >
+            GitHub
+          </a>
         </div>
       </div>
     </footer>
