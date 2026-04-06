@@ -34,6 +34,9 @@ export default function Home() {
     setResults,
     groupedResults,
     setGroupedResults,
+    allGroupedResults,
+    showHiddenGroups,
+    setShowHiddenGroups,
     isAnalyzing,
     fiscalYear,
     setFiscalYear,
@@ -104,6 +107,9 @@ export default function Home() {
               mode={mode}
               results={results}
               groupedResults={groupedResults}
+              allGroupedResults={allGroupedResults}
+              showHiddenGroups={showHiddenGroups}
+              setShowHiddenGroups={setShowHiddenGroups}
               isAnalyzing={isAnalyzing}
               transactionsCount={transactions.length}
               totalDonations={totalDonations}

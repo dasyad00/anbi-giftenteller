@@ -16,7 +16,9 @@ export function useDonationAnalysis() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [results, setResults] = useState<DonationResult[]>([]);
-  const [groupedResults, setGroupedResults] = useState<GroupedDonation[]>([]);
+  const [allGroupedResults, setAllGroupedResults] = useState<GroupedDonation[]>(
+    [],
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [fiscalYear, setFiscalYear] = useState(
     new Date().getFullYear().toString(),
@@ -31,6 +33,17 @@ export function useDonationAnalysis() {
     null,
   );
 
+  // By default we hide non-associated groups. UI can toggle this via exposed setter.
+  const [showHiddenGroups, setShowHiddenGroups] = useState(false);
+
+  const visibleGroupedResults = useMemo(
+    () =>
+      showHiddenGroups
+        ? allGroupedResults
+        : allGroupedResults.filter((g) => !!g.counterparty.rsin),
+    [allGroupedResults, showHiddenGroups],
+  );
+
   const handleAnalyze = async () => {
     if (transactions.length === 0) return;
     setIsAnalyzing(true);
@@ -42,13 +55,14 @@ export function useDonationAnalysis() {
           fiscalYear,
         );
         setResults(donationResults);
-        setGroupedResults([]);
+        setAllGroupedResults([]);
       } else {
         const grouped = await groupTransactionsByCounterparty(
           transactions,
           fiscalYear,
         );
-        setGroupedResults(grouped);
+        // store the full set, but the UI will only see associated ones by default
+        setAllGroupedResults(grouped);
         setResults([]);
       }
     } catch (err) {
@@ -65,7 +79,7 @@ export function useDonationAnalysis() {
   };
 
   const handleDissociateAnbi = (groupId: string) => {
-    const updatedGroupedResults = groupedResults.map((g) =>
+    const updated = allGroupedResults.map((g) =>
       g.id === groupId
         ? {
             ...g,
@@ -77,13 +91,13 @@ export function useDonationAnalysis() {
           }
         : g,
     );
-    setGroupedResults(updatedGroupedResults);
+    setAllGroupedResults(updated);
   };
 
   const handleAnbiSelection = (anbi: AnbiOrganisation) => {
     if (!selectedGroup) return;
 
-    const updatedGroupedResults = groupedResults.map((g) =>
+    const updated = allGroupedResults.map((g) =>
       g.id === selectedGroup.id
         ? {
             ...g,
@@ -96,7 +110,7 @@ export function useDonationAnalysis() {
         : g,
     );
 
-    setGroupedResults(updatedGroupedResults);
+    setAllGroupedResults(updated);
     setIsAnbiModalOpen(false);
     setSelectedGroup(null);
   };
@@ -105,12 +119,15 @@ export function useDonationAnalysis() {
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // Total donations should only include ANBI-associated transactions when in manual mode.
   const totalDonations = useMemo(
     () =>
       mode === 'ai'
         ? results.reduce((sum, r) => sum + r.amount, 0)
-        : groupedResults.reduce((sum, r) => sum + r.totalAmount, 0),
-    [mode, results, groupedResults],
+        : allGroupedResults
+            .filter((g) => !!g.counterparty.rsin)
+            .reduce((sum, r) => sum + r.totalAmount, 0),
+    [mode, results, allGroupedResults],
   );
 
   return {
@@ -118,8 +135,11 @@ export function useDonationAnalysis() {
     setTransactions,
     results,
     setResults,
-    groupedResults,
-    setGroupedResults,
+    groupedResults: visibleGroupedResults,
+    setGroupedResults: setAllGroupedResults,
+    allGroupedResults,
+    showHiddenGroups,
+    setShowHiddenGroups,
     isAnalyzing,
     fiscalYear,
     setFiscalYear,

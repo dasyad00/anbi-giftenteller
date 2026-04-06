@@ -9,6 +9,9 @@ interface ResultsDisplayProps {
   mode: AnalysisMode;
   results: DonationResult[];
   groupedResults: GroupedDonation[];
+  allGroupedResults?: GroupedDonation[];
+  showHiddenGroups?: boolean;
+  setShowHiddenGroups?: (v: boolean) => void;
   isAnalyzing: boolean;
   transactionsCount: number;
   totalDonations: number;
@@ -22,6 +25,7 @@ export function ResultsDisplay({
   mode,
   results,
   groupedResults,
+  allGroupedResults,
   isAnalyzing,
   transactionsCount,
   totalDonations,
@@ -29,6 +33,8 @@ export function ResultsDisplay({
   onToggleGroup,
   onAssociateAnbi,
   onDissociateAnbi,
+  showHiddenGroups,
+  setShowHiddenGroups,
 }: ResultsDisplayProps) {
   const { t } = useTranslation();
 
@@ -97,7 +103,34 @@ export function ResultsDisplay({
             {/* Manual Grouped Results */}
             {mode === 'manual' && (
               <div className="space-y-4">
-                {groupedResults.map((group, idx) => (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-500">
+                    {t('associated_groups_count', {
+                      count: groupedResults.length,
+                    })}
+                  </p>
+
+                  {setShowHiddenGroups && allGroupedResults && (
+                    <button
+                      onClick={() => setShowHiddenGroups(!showHiddenGroups)}
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      {showHiddenGroups
+                        ? t('hide_non_anbi')
+                        : t('show_non_anbi', {
+                            count: Math.max(
+                              0,
+                              allGroupedResults.length - groupedResults.length,
+                            ),
+                          })}
+                    </button>
+                  )}
+                </div>
+
+                {(showHiddenGroups && allGroupedResults
+                  ? allGroupedResults
+                  : groupedResults
+                ).map((group, idx) => (
                   <GroupedTransactionCard
                     key={idx}
                     group={group}
