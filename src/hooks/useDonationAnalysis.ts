@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { analyzeTransactions } from '../services/gemini';
 import {
   groupTransactionsByCounterparty,
-  type GroupedDonation,
+  type TransactionGroup,
 } from '../lib/analysis';
 import {
   type AnalysisMode,
@@ -16,9 +16,9 @@ export function useDonationAnalysis() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [results, setResults] = useState<DonationResult[]>([]);
-  const [allGroupedResults, setAllGroupedResults] = useState<GroupedDonation[]>(
-    [],
-  );
+  const [allGroupedResults, setAllGroupedResults] = useState<
+    TransactionGroup[]
+  >([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [fiscalYear, setFiscalYear] = useState(
     new Date().getFullYear().toString(),
@@ -29,7 +29,7 @@ export function useDonationAnalysis() {
     {},
   );
   const [isAnbiModalOpen, setIsAnbiModalOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<GroupedDonation | null>(
+  const [selectedGroup, setSelectedGroup] = useState<TransactionGroup | null>(
     null,
   );
 
@@ -73,7 +73,7 @@ export function useDonationAnalysis() {
     }
   };
 
-  const handleAssociateAnbi = (group: GroupedDonation) => {
+  const handleAssociateAnbi = (group: TransactionGroup) => {
     setSelectedGroup(group);
     setIsAnbiModalOpen(true);
   };

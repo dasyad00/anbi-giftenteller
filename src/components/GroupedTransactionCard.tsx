@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { GroupedDonation } from '../lib/analysis';
+import { TransactionGroup } from '../lib/analysis';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface GroupedTransactionCardProps {
-  group: GroupedDonation;
+  group: TransactionGroup;
   isExpanded: boolean;
   onToggle: () => void;
   onAssociateAnbi: () => void;

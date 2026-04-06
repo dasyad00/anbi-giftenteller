@@ -1,15 +1,15 @@
 import { Download, FileText, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { type GroupedDonation } from '../lib/analysis';
+import { type TransactionGroup } from '../lib/analysis';
 import { AnalysisMode, type DonationResult } from '../lib/types';
 import { GroupedTransactionCard } from './GroupedTransactionCard';
 
 interface ResultsDisplayProps {
   mode: AnalysisMode;
   results: DonationResult[];
-  groupedResults: GroupedDonation[];
-  allGroupedResults?: GroupedDonation[];
+  groupedResults: TransactionGroup[];
+  allGroupedResults?: TransactionGroup[];
   showHiddenGroups?: boolean;
   setShowHiddenGroups?: (v: boolean) => void;
   isAnalyzing: boolean;
@@ -17,7 +17,7 @@ interface ResultsDisplayProps {
   totalDonations: number;
   expandedGroups: Record<string, boolean>;
   onToggleGroup: (id: string) => void;
-  onAssociateAnbi: (group: GroupedDonation) => void;
+  onAssociateAnbi: (group: TransactionGroup) => void;
   onDissociateAnbi: (id: string) => void;
 }
 

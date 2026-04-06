@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { applyManualCorrections } from './manualCorrection';
-import { GroupedDonation } from './analysis';
+import { TransactionGroup } from './analysis';
 
 describe('applyManualCorrections', () => {
-  const mockGroupedDonations: GroupedDonation[] = [
+  const mockTransactionGroups: TransactionGroup[] = [
     {
       id: '1',
       counterparty: { name: 'Charity A', iban: 'NL1', rsin: 123 },
@@ -32,7 +32,7 @@ describe('applyManualCorrections', () => {
       },
     ];
 
-    const result = applyManualCorrections(mockGroupedDonations, corrections);
+    const result = applyManualCorrections(mockTransactionGroups, corrections);
 
     const correctedGroup = result.find(
       (g) => g.counterparty.name === 'Corrected Charity',
@@ -43,8 +43,8 @@ describe('applyManualCorrections', () => {
   });
 
   it('should not change anything if no corrections are provided', () => {
-    const result = applyManualCorrections(mockGroupedDonations, []);
-    expect(result).toEqual(mockGroupedDonations);
+    const result = applyManualCorrections(mockTransactionGroups, []);
+    expect(result).toEqual(mockTransactionGroups);
   });
 
   it('should not change anything if the groupId does not match', () => {
@@ -55,8 +55,8 @@ describe('applyManualCorrections', () => {
       },
     ];
 
-    const result = applyManualCorrections(mockGroupedDonations, corrections);
-    expect(result).toEqual(mockGroupedDonations);
+    const result = applyManualCorrections(mockTransactionGroups, corrections);
+    expect(result).toEqual(mockTransactionGroups);
   });
 
   it('should handle multiple corrections', () => {
@@ -71,7 +71,7 @@ describe('applyManualCorrections', () => {
       },
     ];
 
-    const result = applyManualCorrections(mockGroupedDonations, corrections);
+    const result = applyManualCorrections(mockTransactionGroups, corrections);
 
     const correctedGroup1 = result.find(
       (g) => g.counterparty.name === 'Corrected Charity',
