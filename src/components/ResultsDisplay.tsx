@@ -63,12 +63,14 @@ export function ResultsDisplay({
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg">{t('results')}</h3>
+              {/*
               <div className="flex gap-2">
                 <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5">
                   <Download className="w-4 h-4" />
                   {t('export_pdf')}
                 </button>
               </div>
+              */}
             </div>
 
             {/* AI Results */}
