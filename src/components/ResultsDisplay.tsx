@@ -1,5 +1,5 @@
 import { Download, FileText, TrendingUp } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { type TransactionGroup } from '../lib/analysis';
 import { AnalysisMode, type DonationResult } from '../lib/types';
@@ -127,19 +127,29 @@ export function ResultsDisplay({
                   )}
                 </div>
 
-                {(showHiddenGroups && allGroupedResults
-                  ? allGroupedResults
-                  : groupedResults
-                ).map((group, idx) => (
-                  <GroupedTransactionCard
-                    key={idx}
-                    group={group}
-                    isExpanded={expandedGroups[group.id]}
-                    onToggle={() => onToggleGroup(group.id)}
-                    onAssociateAnbi={() => onAssociateAnbi(group)}
-                    onDissociateAnbi={() => onDissociateAnbi(group.id)}
-                  />
-                ))}
+                <AnimatePresence initial={false}>
+                  {(showHiddenGroups && allGroupedResults
+                    ? allGroupedResults
+                    : groupedResults
+                  ).map((group) => (
+                    <motion.div
+                      key={group.id}
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <GroupedTransactionCard
+                        group={group}
+                        isExpanded={expandedGroups[group.id]}
+                        onToggle={() => onToggleGroup(group.id)}
+                        onAssociateAnbi={() => onAssociateAnbi(group)}
+                        onDissociateAnbi={() => onDissociateAnbi(group.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             )}
           </div>
